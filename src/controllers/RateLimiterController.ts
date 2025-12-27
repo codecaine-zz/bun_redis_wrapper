@@ -20,7 +20,7 @@
  */
 
 import type { RedisWrapper } from "../redis-wrapper.ts";
-import { createNamespacedRedis } from "../index.ts";
+import { createNamespacedRedis } from "../index";
 
 export interface RateLimitResult {
   allowed: boolean;

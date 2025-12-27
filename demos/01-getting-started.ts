@@ -7,7 +7,7 @@
  * Run with: bun run demos/01-getting-started.ts
  */
 
-import { createRedis } from "../index.ts";
+import { createRedis } from "../src/index.ts";
 
 async function main() {
   console.log("🚀 Demo 1: Getting Started\n");

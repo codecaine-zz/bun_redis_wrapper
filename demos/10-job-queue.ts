@@ -11,7 +11,7 @@
  * Run with: bun run demos/10-job-queue.ts
  */
 
-import { createRedis, createNamespacedRedis } from "../index.ts";
+import { createRedis, createNamespacedRedis } from "../src/index.ts";
 
 // ============================================================================
 // Types

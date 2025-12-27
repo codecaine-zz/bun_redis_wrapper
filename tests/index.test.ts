@@ -11,8 +11,8 @@
  */
 
 import { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } from "bun:test";
-import { createRedis, createNamespacedRedis, clearNamespace } from "./index";
-import type { RedisWrapper, NamespacedRedisWrapper } from "./index";
+import { createRedis, createNamespacedRedis, clearNamespace } from "../src/index";
+import type { RedisWrapper, NamespacedRedisWrapper } from "../src/index";
 
 const TEST_REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 

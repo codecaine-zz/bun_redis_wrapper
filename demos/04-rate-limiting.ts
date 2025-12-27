@@ -10,7 +10,7 @@
  * Run with: bun run demos/04-rate-limiting.ts
  */
 
-import { createRedis, createNamespacedRedis } from "../index.ts";
+import { createRedis, createNamespacedRedis } from "../src/index.ts";
 
 // ============================================================================
 // Types
@@ -227,7 +227,7 @@ class RateLimiter {
 async function simulateRequest(
   result: RateLimitResult,
   requestNum: number
-): void {
+): Promise<void> {
   if (result.allowed) {
     console.log(`  ✅ Request ${requestNum}: ALLOWED (${result.remaining} remaining)`);
   } else {

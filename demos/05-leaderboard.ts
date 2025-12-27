@@ -11,7 +11,7 @@
  * Run with: bun run demos/05-leaderboard.ts
  */
 
-import { createRedis, createNamespacedRedis } from "../index.ts";
+import { createRedis, createNamespacedRedis } from "../src/index.ts";
 
 // ============================================================================
 // Types
@@ -84,12 +84,22 @@ class LeaderboardManager {
    */
   async getTopPlayers(boardName: string, count: number = 10): Promise<LeaderboardEntry[]> {
     // Get top players in descending order (highest scores first)
-    const results = await this.board.command<string[]>("ZREVRANGE", boardName, 0, count - 1, "WITHSCORES");
+    const results = await this.board.command<any>("ZREVRANGE", boardName, 0, count - 1, "WITHSCORES");
     
     const entries: LeaderboardEntry[] = [];
     
-    // Redis returns [member, score, member, score, ...]
-    if (Array.isArray(results)) {
+    // Handle nested array format [[member, score], ...]
+    if (Array.isArray(results) && results.length > 0 && Array.isArray(results[0])) {
+      results.forEach((pair: any, index: number) => {
+        entries.push({
+          player: String(pair[0]),
+          score: parseFloat(String(pair[1])),
+          rank: index + 1
+        });
+      });
+    } 
+    // Handle flat array format [member, score, member, score, ...]
+    else if (Array.isArray(results)) {
       for (let i = 0; i < results.length; i += 2) {
         if (i + 1 < results.length) {
           entries.push({
@@ -119,10 +129,21 @@ class LeaderboardManager {
     const start = Math.max(0, rank - range);
     const end = rank + range;
 
-    const results = await this.board.command<string[]>("ZREVRANGE", boardName, start, end, "WITHSCORES");
+    const results = await this.board.command<any>("ZREVRANGE", boardName, start, end, "WITHSCORES");
     const entries: LeaderboardEntry[] = [];
 
-    if (Array.isArray(results)) {
+    // Handle nested array format [[member, score], ...]
+    if (Array.isArray(results) && results.length > 0 && Array.isArray(results[0])) {
+      results.forEach((pair: any, index: number) => {
+        entries.push({
+          player: String(pair[0]),
+          score: parseFloat(String(pair[1])),
+          rank: start + index + 1
+        });
+      });
+    }
+    // Handle flat array format [member, score, member, score, ...]
+    else if (Array.isArray(results)) {
       for (let i = 0; i < results.length; i += 2) {
         if (i + 1 < results.length) {
           entries.push({
@@ -213,7 +234,16 @@ class LeaderboardManager {
     for (const sourceBoard of sourceBoards) {
       const players = await this.board.zrange(sourceBoard, 0, -1, true);
       
-      if (Array.isArray(players)) {
+      // Handle nested array format [[member, score], ...]
+      if (Array.isArray(players) && players.length > 0 && Array.isArray(players[0])) {
+        for (const pair of players) {
+          const player = String(pair[0]);
+          const score = Number(pair[1]);
+          await this.incrementScore(destBoard, player, score);
+        }
+      }
+      // Handle flat array format [member, score, member, score, ...]
+      else if (Array.isArray(players)) {
         for (let i = 0; i < players.length; i += 2) {
           if (i + 1 < players.length) {
             const player = String(players[i]);
@@ -235,7 +265,7 @@ class LeaderboardManager {
 async function displayLeaderboard(
   entries: LeaderboardEntry[],
   title: string
-): void {
+): Promise<void> {
   console.log(`\n${title}`);
   console.log("─".repeat(50));
   console.log("Rank | Player           | Score");
@@ -341,7 +371,7 @@ async function main() {
   console.log(`Total Players: ${totalPlayers}`);
 
   const top1 = await leaderboard.getTopPlayers("daily", 1);
-  if (top1.length > 0) {
+  if (top1.length > 0 && top1[0]) {
     console.log(`Highest Score: ${top1[0].score} (${top1[0].player})`);
   }
 

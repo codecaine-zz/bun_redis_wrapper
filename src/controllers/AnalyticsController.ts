@@ -313,6 +313,7 @@ export class AnalyticsController {
 
     for (let i = 0; i < steps.length; i++) {
       const step = steps[i];
+      if (!step) continue;
       const users = await this.getUniqueCount(`funnel:${funnelName}:${step}`);
       const conversionRate = i === 0 ? 100 : (users / previousCount) * 100;
 
@@ -361,7 +362,7 @@ export class AnalyticsController {
     for (const key of keys) {
       const withoutPrefix = key.replace(prefix, "");
       const parts = withoutPrefix.split(":");
-      if (parts.length >= 2) {
+      if (parts.length >= 2 && parts[1]) {
         metrics.add(parts[1]);
       }
     }

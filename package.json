@@ -1,27 +1,77 @@
 {
-  "name": "bun_redis_wrapper",
-  "version": "1.0.0",
-  "description": "Single-file Redis namespace wrapper for Bun with automatic key prefixing",
-  "module": "index.ts",
+  "name": "@codecaine-zz/bun-redis-wrapper",
+  "version": "1.1.0",
+  "description": "Production-ready Redis wrapper for Bun with namespaces, controllers, and TypeScript support",
+  "author": "codecaine-zz",
+  "license": "MIT",
   "type": "module",
-  "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./controllers": {
+      "types": "./dist/controllers/index.d.ts",
+      "import": "./dist/controllers/index.js",
+      "default": "./dist/controllers/index.js"
+    },
+    "./controllers/*": {
+      "types": "./dist/controllers/*.d.ts",
+      "import": "./dist/controllers/*.js",
+      "default": "./dist/controllers/*.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
+    "build": "bun build:clean && bun build:ts",
+    "build:clean": "rm -rf dist",
+    "build:ts": "tsc --project tsconfig.build.json",
     "dev": "bun run index.ts",
     "example": "bun run example.ts",
     "test": "bun test",
-    "test:watch": "bun test --watch"
+    "test:watch": "bun test --watch",
+    "prepublishOnly": "bun run test && bun run build",
+    "prepare": "bun run build"
   },
   "keywords": [
     "redis",
-    "namespace",
     "bun",
     "wrapper",
-    "key-prefix"
+    "namespace",
+    "typescript",
+    "session",
+    "cache",
+    "rate-limit",
+    "queue",
+    "analytics",
+    "controller",
+    "production-ready"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codecaine-zz/bun_redis_wrapper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/codecaine-zz/bun_redis_wrapper/issues"
+  },
+  "homepage": "https://github.com/codecaine-zz/bun_redis_wrapper#readme",
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "typescript": "^5.3.0"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "bun": ">=1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
   }
 }

@@ -59,7 +59,7 @@ export class StorageController {
   async has(key: string): Promise<boolean> {
     const fullKey = this.getKey(key);
     const exists = await this.redis.exists(fullKey);
-    return exists > 0;
+    return Number(exists) > 0;
   }
 
   /**
@@ -297,14 +297,19 @@ export class StorageController {
 
     // Navigate to parent object
     for (let i = 0; i < parts.length - 1; i++) {
-      if (!(parts[i] in obj)) {
-        obj[parts[i]] = {};
+      const part = parts[i];
+      if (!part) continue;
+      if (!(part in obj)) {
+        obj[part] = {};
       }
-      obj = obj[parts[i]];
+      obj = obj[part];
     }
 
     // Set value
-    obj[parts[parts.length - 1]] = value;
+    const lastPart = parts[parts.length - 1];
+    if (lastPart) {
+      obj[lastPart] = value;
+    }
 
     await this.set(key, current);
   }

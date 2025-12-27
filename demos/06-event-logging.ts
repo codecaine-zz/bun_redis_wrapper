@@ -10,7 +10,7 @@
  * Run with: bun run demos/06-event-logging.ts
  */
 
-import { createRedis, createNamespacedRedis } from "../index.ts";
+import { createRedis, createNamespacedRedis } from "../src/index.ts";
 
 // ============================================================================
 // Types
@@ -142,8 +142,12 @@ class EventLogger {
 
     events.forEach(event => {
       const type = event.fields.eventType;
-      eventTypes[type] = (eventTypes[type] || 0) + 1;
-      uniqueUsers.add(event.fields.userId);
+      if (type) {
+        eventTypes[type] = (eventTypes[type] || 0) + 1;
+      }
+      if (event.fields.userId) {
+        uniqueUsers.add(event.fields.userId);
+      }
     });
 
     return {
@@ -186,7 +190,7 @@ class EventLogger {
 // Demo Application
 // ============================================================================
 
-async function displayEvents(events: StreamEntry[], title: string): void {
+async function displayEvents(events: StreamEntry[], title: string): Promise<void> {
   console.log(`\n${title}`);
   console.log("─".repeat(70));
   
@@ -196,7 +200,7 @@ async function displayEvents(events: StreamEntry[], title: string): void {
   }
 
   events.forEach((event, idx) => {
-    const timestamp = new Date(parseInt(event.fields.timestamp));
+    const timestamp = new Date(parseInt(event.fields.timestamp || '0'));
     console.log(`\n${idx + 1}. Event ID: ${event.id}`);
     console.log(`   Type: ${event.fields.eventType}`);
     console.log(`   User: ${event.fields.userId}`);
@@ -211,8 +215,11 @@ async function displayEvents(events: StreamEntry[], title: string): void {
       console.log(`   Metadata:`);
       metadataKeys.forEach(key => {
         try {
-          const value = JSON.parse(event.fields[key]);
-          console.log(`     ${key}: ${JSON.stringify(value)}`);
+          const fieldValue = event.fields[key];
+          if (fieldValue) {
+            const value = JSON.parse(fieldValue);
+            console.log(`     ${key}: ${JSON.stringify(value)}`);
+          }
         } catch {
           console.log(`     ${key}: ${event.fields[key]}`);
         }
@@ -350,7 +357,7 @@ async function main() {
   const aliceEvents = await logger.getUserEvents("user:activity", "user:alice");
   console.log(`\nAlice has ${aliceEvents.length} events:`);
   aliceEvents.forEach((e, i) => {
-    const time = new Date(parseInt(e.fields.timestamp));
+    const time = new Date(parseInt(e.fields.timestamp || '0'));
     console.log(`  ${i + 1}. ${e.fields.eventType} at ${time.toLocaleTimeString()}`);
   });
 

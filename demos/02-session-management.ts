@@ -7,7 +7,7 @@
  * Run with: bun run demos/02-session-management.ts
  */
 
-import { createRedis, createNamespacedRedis } from "../index.ts";
+import { createRedis, createNamespacedRedis } from "../src/index.ts";
 
 // ============================================================================
 // Types

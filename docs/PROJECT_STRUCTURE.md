@@ -6,44 +6,43 @@ This guide explains how the Bun Redis Wrapper is organized for easy navigation a
 
 ```
 bun_redis_wrapper/
-├── controllers/              # 🎯 Production-ready controllers (START HERE!)
-│   ├── README.md            # Controllers documentation
-│   ├── index.ts             # Export all controllers
-│   ├── SessionController.ts # User sessions
-│   ├── CacheController.ts   # Intelligent caching
-│   ├── RateLimiterController.ts # Rate limiting
-│   ├── QueueController.ts   # Background jobs
-│   ├── StorageController.ts # Key-value storage
-│   ├── AnalyticsController.ts # Metrics tracking
-│   └── example-app.ts       # Complete application example
-│
-├── demos/                    # 11 comprehensive learning examples
-│   ├── README.md            # Demos index
-│   ├── 01-getting-started.ts
-│   ├── 02-session-management.ts
-│   ├── 03-caching-strategies.ts
-│   ├── 04-rate-limiting.ts
-│   ├── 05-leaderboard.ts
-│   ├── 06-event-logging.ts
-│   ├── 07-location-services.ts
-│   ├── 08-analytics-hyperloglog.ts
-│   ├── 09-multi-tenant.ts
-│   ├── 10-job-queue.ts
-│   ├── 11-environment-namespaces-cms.ts
-│   ├── GETTING_STARTED.md   # Quick start guide
-│   ├── FEATURE_MATRIX.md    # Feature coverage
-│   └── run.ts               # Interactive demo runner
-│
-├── Core Library
+├── src/                      # 📦 Source Code
 │   ├── index.ts             # Main exports
 │   ├── redis-wrapper.ts     # Core Redis wrapper
-│   └── index.test.ts        # Test suite (83 tests)
+│   └── controllers/         # 🎯 Production-ready controllers
+│       ├── README.md        # Controllers documentation
+│       ├── index.ts         # Export all controllers
+│       ├── SessionController.ts
+│       ├── CacheController.ts
+│       ├── RateLimiterController.ts
+│       ├── QueueController.ts
+│       ├── StorageController.ts
+│       ├── AnalyticsController.ts
+│       ├── FormularyController.ts
+│       ├── RadAppController.ts
+│       └── ...
 │
-├── Documentation
-│   ├── README.md            # Main documentation
+├── demos/                    # 🎓 Learning Examples (14 demos)
+│   ├── README.md            # Demos index
+│   ├── 00-basic-usage.ts    # Basic usage example
+│   ├── 01-getting-started.ts
+│   ├── ...
+│   ├── 14-controller-app.ts # Full application example
+│   └── run.ts               # Interactive demo runner
+│
+├── tests/                    # 🧪 Tests
+│   └── index.test.ts        # Test suite
+│
+├── docs/                     # 📚 Documentation
 │   ├── API.md               # Complete API reference
 │   ├── QUICK_REFERENCE.md   # Common patterns
 │   ├── REDIS_FEATURES.md    # Redis features coverage
+│   └── ...
+│
+├── dist/                     # 🏗️ Build Output
+├── package.json
+├── tsconfig.json
+└── README.md
 │   └── SUMMARY.md           # Project summary
 │
 └── Configuration
@@ -73,11 +72,13 @@ bun_redis_wrapper/
    - **Background tasks?** → Use `QueueController`
    - **Store settings?** → Use `StorageController`
    - **Track metrics?** → Use `AnalyticsController`
+   - **Healthcare/Pharmacy?** → Use `FormularyController`
+   - **Build app fast?** → Use `RadAppController`
 
 ### For Learning Redis Concepts
 
 1. **Explore Demos** → [demos/README.md](demos/README.md)
-   - 11 comprehensive examples
+   - 13 comprehensive examples
    - All Redis data types covered
    - Best practices included
 
@@ -171,6 +172,7 @@ import "./demos/run.ts";
 | `QueueController.ts` | Background jobs | Email, image processing, async tasks |
 | `StorageController.ts` | Key-value storage | User settings, configurations |
 | `AnalyticsController.ts` | Metrics tracking | Page views, user activity |
+| `FormularyController.ts` | Healthcare formulary CRUD | Medicare Part D, drug management, PA/step therapy |
 
 ### Demos (Learning Material)
 
@@ -187,6 +189,7 @@ import "./demos/run.ts";
 | 09 | Multi-tenancy | ⭐⭐⭐ Advanced |
 | 10 | Job queues | ⭐⭐⭐ Advanced |
 | 11 | Environment isolation | ⭐⭐ Intermediate |
+| 12 | Healthcare formulary CRUD | ⭐⭐ Intermediate |
 
 ### Documentation Files
 

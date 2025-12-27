@@ -8,7 +8,7 @@
  * Run with: bun run example.ts
  */
 
-import { createRedis, createNamespacedRedis, clearNamespace } from "./index.ts";
+import { createRedis, createNamespacedRedis, clearNamespace } from "../src/index.ts";
 
 async function main() {
   const url = process.env.REDIS_URL || "redis://localhost:6379";

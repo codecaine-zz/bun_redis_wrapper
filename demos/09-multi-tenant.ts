@@ -11,7 +11,7 @@
  * Run with: bun run demos/09-multi-tenant.ts
  */
 
-import { createRedis, createNamespacedRedis, clearNamespace } from "../index.ts";
+import { createRedis, createNamespacedRedis, clearNamespace } from "../src/index.ts";
 
 // ============================================================================
 // Types

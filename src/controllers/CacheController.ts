@@ -142,7 +142,7 @@ export class CacheController {
   async has(key: string): Promise<boolean> {
     const cacheKey = this.getKey(key);
     const exists = await this.redis.exists(cacheKey);
-    return exists > 0;
+    return Number(exists) > 0;
   }
 
   /**

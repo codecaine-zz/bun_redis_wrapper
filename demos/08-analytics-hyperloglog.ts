@@ -10,7 +10,7 @@
  * Run with: bun run demos/08-analytics-hyperloglog.ts
  */
 
-import { createRedis, createNamespacedRedis } from "../index.ts";
+import { createRedis, createNamespacedRedis } from "../src/index.ts";
 
 // ============================================================================
 // Analytics Service Class

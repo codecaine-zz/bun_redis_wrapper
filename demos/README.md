@@ -6,7 +6,8 @@ Comprehensive demo applications showcasing the entire Redis Wrapper API with rea
 
 | Demo | Focus Area | Key Features | Difficulty |
 |------|------------|--------------|------------|
-| [01-getting-started.ts](#01-getting-started) | Basic Operations | GET, SET, JSON, TTL | ⭐ Beginner |
+| [00-basic-usage.ts](#00-basic-usage) | Basic Usage | Simple connection and operations | ⭐ Beginner |
+| [01-getting-started.ts](#01-getting-started) | Core Concepts | GET, SET, JSON, TTL | ⭐ Beginner |
 | [02-session-management.ts](#02-session-management) | Session System | User sessions, multi-device, expiration | ⭐⭐ Intermediate |
 | [03-caching-strategies.ts](#03-caching-strategies) | Caching Patterns | Cache-aside, write-through, warming | ⭐⭐ Intermediate |
 | [04-rate-limiting.ts](#04-rate-limiting) | Rate Limiting | Fixed window, sliding window, token bucket | ⭐⭐⭐ Advanced |
@@ -17,6 +18,9 @@ Comprehensive demo applications showcasing the entire Redis Wrapper API with rea
 | [09-multi-tenant.ts](#09-multi-tenant) | Multi-Tenancy | Tenant isolation, quotas, namespaces | ⭐⭐⭐ Advanced |
 | [10-job-queue.ts](#10-job-queue) | Job Queue | Background jobs, priorities, retries | ⭐⭐⭐ Advanced |
 | [11-environment-namespaces-cms.ts](#11-environment-namespaces-cms) | Environment Isolation | Dev/staging/prod, CRUD, CMS | ⭐⭐ Intermediate |
+| [12-healthcare-formulary.ts](#12-healthcare-formulary) | Healthcare | Formulary, PA, Step Therapy | ⭐⭐⭐ Advanced |
+| [13-rad-app-development.ts](#13-rad-app-development) | RAD | Rapid App Development, Namespaces | ⭐⭐ Intermediate |
+| [14-controller-app.ts](#14-controller-app) | Full Application | All controllers integrated | ⭐⭐⭐ Advanced |
 
 ## 🚀 Quick Start
 

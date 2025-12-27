@@ -6,19 +6,24 @@ Drop-in controllers for building production applications with Redis. Each contro
 
 ```typescript
 import { createRedis } from "../index.ts";
-import { SessionController } from "./controllers/SessionController.ts";
+import { SessionController, CounterController } from "./controllers/index.ts";
 
 const redis = await createRedis();
 const sessions = new SessionController(redis);
+const counters = new CounterController(redis);
 
 // Use in your app
 const sessionId = await sessions.create("user-123", {
   name: "Alice",
   email: "alice@example.com"
 });
+
+await counters.increment("page:home:views");
 ```
 
-## 📦 Available Controllers
+## 📦 Available Controllers (10 Total)
+
+### Core Controllers
 
 | Controller | Purpose | Use Cases |
 |------------|---------|-----------|
@@ -28,6 +33,15 @@ const sessionId = await sessions.create("user-123", {
 | [QueueController](#queuecontroller) | Job queue | Background tasks, email sending |
 | [StorageController](#storagecontroller) | Key-value storage | User settings, configurations |
 | [AnalyticsController](#analyticscontroller) | Metrics tracking | Page views, user activity |
+
+### ⭐ New Beginner-Friendly Controllers
+
+| Controller | Purpose | Use Cases |
+|------------|---------|-----------|
+| [CounterController](#countercontroller) | Atomic counters | Page views, downloads, votes, inventory |
+| [LeaderboardController](#leaderboardcontroller) | Rankings & scores | Games, competitions, top performers |
+| [LockController](#lockcontroller) | Distributed locks | Payment processing, critical sections |
+| [PubSubController](#pubsubcontroller) | Real-time messaging | Live chat, notifications, updates |
 
 ---
 
@@ -398,6 +412,67 @@ export default app;
 - [API Documentation](../API.md) - Complete API reference
 - [Quick Reference](../QUICK_REFERENCE.md) - Common patterns
 - [Redis Features](../REDIS_FEATURES.md) - Redis data types guide
+
+### 12. FormularyController (Healthcare)
+
+Manages Medicare Part D formularies, drug tiers, prior authorization (PA), and step therapy protocols.
+
+**Features:**
+- **Drug Management**: Add drugs with tier, therapeutic class, and requirements (PA, ST, QL).
+- **Search**: Find drugs by name or therapeutic class.
+- **Step Therapy**: Check compliance with step therapy protocols (e.g., try generic before brand).
+- **Prior Authorization**: Submit and track PA requests.
+- **Formulary Validation**: Validate entire formulary integrity.
+
+**Usage:**
+\`\`\`typescript
+const formulary = new FormularyController(redis);
+
+// Add a drug
+await formulary.addDrug('formulary:2024', {
+  id: 'drug-123',
+  name: 'Lisinopril',
+  tier: 1,
+  therapeuticClass: 'Antihypertensive',
+  requirements: { priorAuth: false, stepTherapy: false }
+});
+
+// Check step therapy
+const compliance = await formulary.checkStepTherapyCompliance(
+  'formulary:2024',
+  'drug-456', // Target drug (e.g., Brand name)
+  ['drug-123'] // Patient history
+);
+\`\`\`
+
+### 13. RadAppController (Rapid Application Development)
+
+A high-level controller designed for building single applications quickly by providing a namespace-scoped environment with simplified data access patterns.
+
+**Features:**
+- **Automatic Namespacing**: All keys are prefixed (e.g., `myapp:users:123`).
+- **Entity Storage**: Simple CRUD for JSON objects.
+- **Global State**: Key-Value storage for app configuration.
+- **Feeds/Lists**: Activity streams and lists.
+- **Counters**: Atomic counters for IDs and stats.
+
+**Usage:**
+\`\`\`typescript
+const app = new RadAppController(redis, "my-todo-app");
+
+// 1. Save an entity (User)
+await app.saveEntity("users", "u1", { name: "Alice", role: "admin" });
+
+// 2. Create a task with auto-increment ID
+const taskId = await app.incrementCounter("task_id");
+await app.saveEntity("tasks", `t${taskId}`, { title: "Buy milk", done: false });
+
+// 3. Add to activity feed
+await app.pushToFeed("activity", { action: "task_created", id: taskId });
+
+// 4. Get recent activity
+const feed = await app.getRecentFeedItems("activity", 10);
+\`\`\`
 
 ---
 

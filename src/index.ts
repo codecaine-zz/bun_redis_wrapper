@@ -118,6 +118,9 @@ export interface NamespacedRedisWrapper {
   pfcount(...keys: string[]): Promise<number>;
   pfmerge(destKey: string, ...sourceKeys: string[]): Promise<"OK">;
   
+  // Generic command execution
+  command<T = unknown>(cmd: string, ...args: any[]): Promise<T>;
+  
   // Cleanup
   [Symbol.asyncDispose](): Promise<void>;
 }
@@ -175,8 +178,8 @@ export function createNamespacedRedis(
       return redis.get(addPrefix(key));
     },
 
-    async set(key: string, value: string | number, options?: SetOptions) {
-      return redis.set(addPrefix(key), value, options);
+    async set(key: string, value: string | number, options?: SetOptions): Promise<string | null> {
+      return redis.set(addPrefix(key), value, options) as Promise<string | null>;
     },
 
     async command<T = unknown>(cmd: string, ...args: any[]): Promise<T> {

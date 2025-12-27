@@ -1,0 +1,48 @@
+# Source files (only ship compiled dist)
+*.ts
+!*.d.ts
+
+# Tests
+*.test.ts
+*.test.js
+index.test.ts
+coverage/
+*.lcov
+
+# Demos and examples
+demos/
+example.ts
+controllers/example-app.ts
+
+# Documentation (except README)
+API.md
+QUICK_REFERENCE.md
+REDIS_FEATURES.md
+SUMMARY.md
+PROJECT_STRUCTURE.md
+
+# Config files
+tsconfig.json
+tsconfig.build.json
+.gitignore
+
+# Development
+node_modules/
+.env
+.env.*
+*.log
+
+# Build artifacts
+*.tsbuildinfo
+.cache
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Git
+.git/
+.gitattributes

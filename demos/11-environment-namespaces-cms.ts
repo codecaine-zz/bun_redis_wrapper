@@ -13,7 +13,7 @@
  * Run with: bun run demos/11-environment-namespaces-cms.ts
  */
 
-import { createRedis, createNamespacedRedis, clearNamespace } from "../index.ts";
+import { createRedis, createNamespacedRedis, clearNamespace } from "../src/index.ts";
 
 // ============================================================================
 // Types

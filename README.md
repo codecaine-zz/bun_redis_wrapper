@@ -7,8 +7,8 @@ A powerful Redis wrapper for Bun with **production-ready controllers** for build
 ### Option 1: Use Production Controllers (Recommended)
 
 ```typescript
-import { createRedis } from "./index.ts";
-import { SessionController, CacheController } from "./controllers/index.ts";
+import { createRedis } from "@codecaine-zz/bun-redis-wrapper";
+import { SessionController, CacheController } from "@codecaine-zz/bun-redis-wrapper/controllers";
 
 const redis = await createRedis();
 
@@ -29,13 +29,13 @@ const user = await cache.getOrSet("user:123", () => db.getUser(123), 300);
 - **StorageController** - Simple key-value storage with JSON
 - **AnalyticsController** - Metrics tracking with HyperLogLog
 
-👉 **[Controllers Documentation](controllers/README.md)** - Complete guide with examples  
-👉 **[Example Application](controllers/example-app.ts)** - Full app using all controllers
+👉 **[Controllers Documentation](src/controllers/README.md)** - Complete guide with examples  
+👉 **[Example Application](demos/14-controller-app.ts)** - Full app using all controllers
 
 ### Option 2: Use Core Wrapper Directly
 
 ```typescript
-import { createRedis, createNamespacedRedis } from "./index.ts";
+import { createRedis, createNamespacedRedis } from "@codecaine-zz/bun-redis-wrapper";
 
 await using redis = await createRedis("redis://localhost:6379");
 await redis.set("key", "value");
@@ -74,15 +74,15 @@ const shopApp = createNamespacedRedis(redis, "shop");
 ## 📚 Documentation
 
 ### For Beginners
-- **[Controllers Guide](controllers/README.md)** - Production-ready controllers ⭐ START HERE
-- **[Example Application](controllers/example-app.ts)** - Complete app example ⭐
+- **[Controllers Guide](src/controllers/README.md)** - Production-ready controllers ⭐ START HERE
+- **[Example Application](demos/14-controller-app.ts)** - Complete app example ⭐
 - **[Demos](demos/)** - 11 comprehensive examples with best practices
 
 ### For Advanced Users
-- **[API.md](API.md)** - Complete API reference with all methods
-- **[REDIS_FEATURES.md](REDIS_FEATURES.md)** - Redis features coverage analysis
-- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Common patterns cheat sheet
-- **[index.test.ts](index.test.ts)** - Full test suite (83 tests)
+- **[API.md](docs/API.md)** - Complete API reference with all methods
+- **[REDIS_FEATURES.md](docs/REDIS_FEATURES.md)** - Redis features coverage analysis
+- **[QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)** - Common patterns cheat sheet
+- **[index.test.ts](tests/index.test.ts)** - Full test suite (83 tests)
 
 ## 🚀 Installation
 
@@ -95,7 +95,7 @@ bun install
 ### Sessions (Production-Ready)
 
 ```typescript
-import { SessionController } from "./controllers/index.ts";
+import { SessionController } from "./src/controllers/index.ts";
 
 const sessions = new SessionController(redis);
 
@@ -118,7 +118,7 @@ await sessions.destroy(sessionId);
 ### Caching (Production-Ready)
 
 ```typescript
-import { CacheController } from "./controllers/index.ts";
+import { CacheController } from "./src/controllers/index.ts";
 
 const cache = new CacheController(redis);
 
@@ -137,7 +137,7 @@ console.log(`Hit rate: ${stats.hitRate}%`);
 ### Rate Limiting (Production-Ready)
 
 ```typescript
-import { RateLimiterController } from "./controllers/index.ts";
+import { RateLimiterController } from "./src/controllers/index.ts";
 
 const limiter = new RateLimiterController(redis);
 
@@ -154,7 +154,7 @@ console.log(`${result.remaining} requests remaining`);
 ### Background Jobs (Production-Ready)
 
 ```typescript
-import { QueueController } from "./controllers/index.ts";
+import { QueueController } from "./src/controllers/index.ts";
 
 const queue = new QueueController(redis);
 
@@ -178,7 +178,7 @@ if (job) {
 ### Multi-Tenant Application
 
 ```typescript
-import { createRedis, createNamespacedRedis } from "./index.ts";
+import { createRedis, createNamespacedRedis } from "./src/index.ts";
 
 await using redis = await createRedis();
 

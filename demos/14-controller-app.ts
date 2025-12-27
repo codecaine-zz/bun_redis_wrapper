@@ -5,7 +5,7 @@
  * Run with: bun run controllers/example-app.ts
  */
 
-import { createRedis } from "../index.ts";
+import { createRedis } from "../src/index.ts";
 import {
   SessionController,
   CacheController,
@@ -13,7 +13,7 @@ import {
   QueueController,
   StorageController,
   AnalyticsController
-} from "./index.ts";
+} from "../src/controllers/index.ts";
 
 // ============================================================================
 // Setup
