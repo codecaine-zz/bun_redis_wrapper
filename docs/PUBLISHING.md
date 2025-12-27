@@ -1,6 +1,6 @@
 # Publishing Guide
 
-This guide explains how to publish the `@codecaine-zz/bun-redis-wrapper` package to npm.
+This guide explains how to publish the `@codecaine/bun-redis-wrapper` package to npm.
 
 ## Prerequisites
 
@@ -78,7 +78,7 @@ npm pack
 
 The `npm pack` command creates a `.tgz` file that you can inspect or install locally:
 ```bash
-npm install ./codecaine-zz-bun-redis-wrapper-1.0.0.tgz
+npm install ./codecaine-bun-redis-wrapper-1.1.0.tgz
 ```
 
 ### 4. Publish to npm
@@ -97,7 +97,7 @@ npm publish
 
 Check your package on npm:
 ```
-https://www.npmjs.com/package/@codecaine-zz/bun-redis-wrapper
+https://www.npmjs.com/package/@codecaine/bun-redis-wrapper
 ```
 
 ## Automated Publishing Workflow
@@ -114,33 +114,33 @@ Once published, users can install your package:
 
 ```bash
 # Using bun
-bun add @codecaine-zz/bun-redis-wrapper
+bun add @codecaine/bun-redis-wrapper
 
 # Using npm
-npm install @codecaine-zz/bun-redis-wrapper
+npm install @codecaine/bun-redis-wrapper
 
 # Using pnpm
-pnpm add @codecaine-zz/bun-redis-wrapper
+pnpm add @codecaine/bun-redis-wrapper
 
 # Using yarn
-yarn add @codecaine-zz/bun-redis-wrapper
+yarn add @codecaine/bun-redis-wrapper
 ```
 
 ## Usage After Installation
 
 ```typescript
 // Import core wrapper
-import { createRedis, createNamespacedRedis } from "@codecaine-zz/bun-redis-wrapper";
+import { createRedis, createNamespacedRedis } from "@codecaine/bun-redis-wrapper";
 
 // Import controllers
 import {
   SessionController,
   CacheController,
   RateLimiterController
-} from "@codecaine-zz/bun-redis-wrapper/controllers";
+} from "@codecaine/bun-redis-wrapper/controllers";
 
 // Or import specific controller
-import { SessionController } from "@codecaine-zz/bun-redis-wrapper/controllers/SessionController";
+import { SessionController } from "@codecaine/bun-redis-wrapper/controllers/SessionController";
 ```
 
 ## Version Management
@@ -166,7 +166,7 @@ npm publish --tag beta
 
 Users can install pre-release versions:
 ```bash
-bun add @codecaine-zz/bun-redis-wrapper@beta
+bun add @codecaine/bun-redis-wrapper@beta
 ```
 
 ## Unpublishing
@@ -175,17 +175,17 @@ bun add @codecaine-zz/bun-redis-wrapper@beta
 
 Within 72 hours of publishing:
 ```bash
-npm unpublish @codecaine-zz/bun-redis-wrapper@1.0.0
+npm unpublish @codecaine/bun-redis-wrapper@1.1.0
 ```
 
 After 72 hours, you can only deprecate:
 ```bash
-npm deprecate @codecaine-zz/bun-redis-wrapper@1.0.0 "This version has a critical bug"
+npm deprecate @codecaine/bun-redis-wrapper@1.1.0 "This version has a critical bug"
 ```
 
 ## Package Scope
 
-This package uses a scoped name: `@codecaine-zz/bun-redis-wrapper`
+This package uses a scoped name: `@codecaine/bun-redis-wrapper`
 
 **Advantages:**
 - ✅ Avoids naming conflicts
@@ -246,7 +246,7 @@ dist/
     ├── RateLimiterController.d.ts
     ├── QueueController.js
     ├── QueueController.d.ts
-    ├── StorageController.ts
+    ├── StorageController.js
     ├── StorageController.d.ts
     ├── AnalyticsController.js
     └── AnalyticsController.d.ts
@@ -294,7 +294,7 @@ jobs:
 
 For issues or questions:
 - GitHub Issues: https://github.com/codecaine-zz/bun_redis_wrapper/issues
-- npm Package: https://www.npmjs.com/package/@codecaine-zz/bun-redis-wrapper
+- npm Package: https://www.npmjs.com/package/@codecaine/bun-redis-wrapper
 
 ## Quick Reference
 
@@ -308,7 +308,7 @@ npm publish --access public  # Publish (first time)
 npm publish                 # Publish (subsequent)
 
 # Verify
-npm view @codecaine-zz/bun-redis-wrapper
+npm view @codecaine/bun-redis-wrapper
 ```
 
 ---

@@ -23,8 +23,8 @@
  * ```
  */
 
-import type { RedisWrapper } from "../index";
-import { createNamespacedRedis } from "../index";
+import type { NamespacedRedisWrapper } from "../index";
+import { RedisWrapper, createNamespacedRedis } from "../index";
 
 export interface LeaderboardEntry {
   member: string;
@@ -46,10 +46,12 @@ export interface LeaderboardStats {
  * Handles millions of entries efficiently.
  */
 export class LeaderboardController {
-  private redis: ReturnType<typeof createNamespacedRedis>;
+  private redis: NamespacedRedisWrapper;
 
-  constructor(redis: RedisWrapper) {
-    this.redis = createNamespacedRedis(redis, "leaderboard");
+  constructor(redis: RedisWrapper | NamespacedRedisWrapper, namespace: string = "leaderboard") {
+    this.redis = redis instanceof RedisWrapper
+      ? createNamespacedRedis(redis, namespace)
+      : redis;
   }
 
   /**

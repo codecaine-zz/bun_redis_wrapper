@@ -1,4 +1,5 @@
 import { RedisWrapper } from "../redis-wrapper";
+import { createNamespacedRedis, type NamespacedRedisWrapper } from "../index";
 
 /**
  * RadAppController (Rapid Application Development)
@@ -15,23 +16,23 @@ import { RedisWrapper } from "../redis-wrapper";
  * - Search/Scan within namespace
  */
 export class RadAppController {
-  private redis: RedisWrapper;
-  private namespace: string;
+  private redis: NamespacedRedisWrapper;
 
   /**
    * @param redis Connected RedisWrapper instance
    * @param namespace The application namespace (e.g., "todo-app", "inventory-system")
    */
-  constructor(redis: RedisWrapper, namespace: string) {
-    this.redis = redis;
-    this.namespace = namespace;
+  constructor(redis: RedisWrapper | NamespacedRedisWrapper, namespace: string) {
+    this.redis = redis instanceof RedisWrapper
+      ? createNamespacedRedis(redis, namespace)
+      : redis;
   }
 
   /**
    * Generates a fully qualified key with the namespace
    */
   private k(key: string): string {
-    return `${this.namespace}:${key}`;
+    return key;
   }
 
   /**
@@ -161,9 +162,7 @@ export class RadAppController {
    * Useful for resetting state during development
    */
   async nukeApp(): Promise<void> {
-    // Scan for all keys starting with namespace:
-    const pattern = `${this.namespace}:*`;
-    const keys = await this.redis.scanAll(pattern);
+    const keys = await this.redis.scanAll("*");
     
     if (keys.length > 0) {
       await this.redis.del(...keys);

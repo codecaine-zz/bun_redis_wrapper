@@ -2,7 +2,7 @@
 
 ## 🎯 What are these demos?
 
-These are **10 comprehensive, production-ready demo applications** that showcase every feature of the Redis Wrapper library. Each demo is a complete, runnable example that you can learn from and adapt for your own projects.
+These are **15 comprehensive, production-ready demo applications** that showcase every feature of the Redis Wrapper library. Each demo is a complete, runnable example that you can learn from and adapt for your own projects.
 
 ## 🚀 Run Your First Demo
 
@@ -43,6 +43,12 @@ bun run demos/run.ts
 
 This gives you a menu to explore all demos!
 
+Prefer a non-interactive run (CI-friendly)?
+
+```bash
+bun run demos
+```
+
 ## 📚 What Each Demo Teaches
 
 | Demo | Real-World Use Case | What You'll Build |
@@ -62,8 +68,8 @@ This gives you a menu to explore all demos!
 
 ### Running Multiple Demos
 ```bash
-# Run demos in sequence
-for demo in demos/0{1..5}*.ts; do bun run "$demo"; done
+# Run the full demo suite (recommended)
+bun run demos
 ```
 
 ### Using Different Redis Instances
@@ -144,9 +150,9 @@ chmod +x demos/*.ts
 
 After running the demos:
 
-1. **Read the full [API Documentation](../API.md)**
-2. **Check out [REDIS_FEATURES.md](../REDIS_FEATURES.md)** for Redis coverage
-3. **Look at [index.test.ts](../index.test.ts)** for test examples
+1. **Read the full [API Documentation](../docs/API.md)**
+2. **Check out [REDIS_FEATURES.md](../docs/REDIS_FEATURES.md)** for Redis coverage
+3. **Look at [tests/index.test.ts](../tests/index.test.ts)** for test examples
 4. **Start building your own application!**
 
 ## 🤝 Get Help

@@ -14,7 +14,8 @@
  * ```
  */
 
-import type { RedisWrapper } from "../redis-wrapper.ts";
+import { RedisWrapper } from "../redis-wrapper";
+import { createNamespacedRedis, type NamespacedRedisWrapper } from "../index";
 
 export interface SessionData {
   userId: string;
@@ -36,12 +37,12 @@ export interface SessionOptions {
 }
 
 export class SessionController {
-  private redis: RedisWrapper;
-  private readonly namespace = "session";
-  private readonly userSessionsNamespace = "user_sessions";
+  private redis: NamespacedRedisWrapper;
 
-  constructor(redis: RedisWrapper) {
-    this.redis = redis;
+  constructor(redis: RedisWrapper | NamespacedRedisWrapper, namespace: string = "session") {
+    this.redis = redis instanceof RedisWrapper
+      ? createNamespacedRedis(redis, namespace)
+      : redis;
   }
 
   /**
@@ -72,11 +73,11 @@ export class SessionController {
     };
 
     // Store session
-    await this.redis.setJSON(`${this.namespace}:${sessionId}`, sessionData, { EX: ttl });
+    await this.redis.setJSON(sessionId, sessionData, { EX: ttl });
 
     // Track session for user (for multi-device support)
-    await this.redis.sadd(`${this.userSessionsNamespace}:${userId}`, sessionId);
-    await this.redis.expire(`${this.userSessionsNamespace}:${userId}`, ttl);
+    await this.redis.sadd(`user_sessions:${userId}`, sessionId);
+    await this.redis.expire(`user_sessions:${userId}`, ttl);
 
     return sessionId;
   }
@@ -88,7 +89,7 @@ export class SessionController {
    * @returns Session data or null if not found/expired
    */
   async get(sessionId: string): Promise<SessionData | null> {
-    const session = await this.redis.getJSON<SessionData>(`${this.namespace}:${sessionId}`);
+    const session = await this.redis.getJSON<SessionData>(sessionId);
     
     if (!session) {
       return null;
@@ -121,7 +122,7 @@ export class SessionController {
     const ttl = Math.floor((session.expiresAt - Date.now()) / 1000);
     
     if (ttl > 0) {
-      await this.redis.setJSON(`${this.namespace}:${sessionId}`, session, { EX: ttl });
+      await this.redis.setJSON(sessionId, session, { EX: ttl });
       return session;
     }
 
@@ -146,7 +147,7 @@ export class SessionController {
     const ttl = Math.floor((session.expiresAt - Date.now()) / 1000);
     
     if (ttl > 0) {
-      await this.redis.setJSON(`${this.namespace}:${sessionId}`, session, { EX: ttl });
+      await this.redis.setJSON(sessionId, session, { EX: ttl });
       return true;
     }
 
@@ -163,10 +164,10 @@ export class SessionController {
     
     if (session) {
       // Remove from user's session set
-      await this.redis.srem(`${this.userSessionsNamespace}:${session.userId}`, sessionId);
+      await this.redis.srem(`user_sessions:${session.userId}`, sessionId);
     }
 
-    await this.redis.del(`${this.namespace}:${sessionId}`);
+    await this.redis.del(sessionId);
   }
 
   /**
@@ -176,18 +177,17 @@ export class SessionController {
    * @returns Number of sessions destroyed
    */
   async destroyAllForUser(userId: string): Promise<number> {
-    const sessionIds = await this.redis.smembers(`${this.userSessionsNamespace}:${userId}`);
+    const sessionIds = await this.redis.smembers(`user_sessions:${userId}`);
     
     if (sessionIds.length === 0) {
       return 0;
     }
 
     // Delete all sessions
-    const keys = sessionIds.map(id => `${this.namespace}:${id}`);
-    await this.redis.del(...keys);
+    await this.redis.del(...sessionIds);
     
     // Clear user's session set
-    await this.redis.del(`${this.userSessionsNamespace}:${userId}`);
+    await this.redis.del(`user_sessions:${userId}`);
 
     return sessionIds.length;
   }
@@ -199,7 +199,7 @@ export class SessionController {
    * @returns Array of session data
    */
   async getAllForUser(userId: string): Promise<SessionData[]> {
-    const sessionIds = await this.redis.smembers(`${this.userSessionsNamespace}:${userId}`);
+    const sessionIds = await this.redis.smembers(`user_sessions:${userId}`);
     const sessions: SessionData[] = [];
 
     for (const sessionId of sessionIds) {
@@ -219,7 +219,7 @@ export class SessionController {
    * @returns Number of active sessions
    */
   async getSessionCount(userId: string): Promise<number> {
-    return await this.redis.command<number>("SCARD", `${this.userSessionsNamespace}:${userId}`);
+    return await this.redis.command<number>("SCARD", `user_sessions:${userId}`);
   }
 
   /**
@@ -228,11 +228,11 @@ export class SessionController {
    * @returns Number of sessions cleaned
    */
   async cleanupExpired(): Promise<number> {
-    const pattern = `${this.namespace}:*`;
-    const keys = await this.redis.scanAll(pattern);
+    const keys = await this.redis.scanAll("*");
     let cleaned = 0;
 
     for (const key of keys) {
+      if (key.startsWith("user_sessions:")) continue;
       const session = await this.redis.getJSON<SessionData>(key);
       if (!session || Date.now() > session.expiresAt) {
         await this.redis.del(key);

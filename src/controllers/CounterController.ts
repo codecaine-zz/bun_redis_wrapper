@@ -23,8 +23,8 @@
  * ```
  */
 
-import type { RedisWrapper } from "../index";
-import { createNamespacedRedis } from "../index";
+import type { NamespacedRedisWrapper } from "../index";
+import { RedisWrapper, createNamespacedRedis } from "../index";
 
 export interface CounterValue {
   key: string;
@@ -38,10 +38,12 @@ export interface CounterValue {
  * All operations are atomic - no race conditions!
  */
 export class CounterController {
-  private redis: ReturnType<typeof createNamespacedRedis>;
+  private redis: NamespacedRedisWrapper;
 
-  constructor(redis: RedisWrapper) {
-    this.redis = createNamespacedRedis(redis, "counter");
+  constructor(redis: RedisWrapper | NamespacedRedisWrapper, namespace: string = "counter") {
+    this.redis = redis instanceof RedisWrapper
+      ? createNamespacedRedis(redis, namespace)
+      : redis;
   }
 
   /**

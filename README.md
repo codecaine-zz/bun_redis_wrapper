@@ -32,6 +32,12 @@ const user = await cache.getOrSet("user:123", () => db.getUser(123), 300);
 - **QueueController** - Background job processing with priorities
 - **StorageController** - Simple key-value storage with JSON
 - **AnalyticsController** - Metrics tracking with HyperLogLog
+- **PubSubController** - Publish/subscribe messaging
+- **LockController** - Distributed locks (simple mutex)
+- **LeaderboardController** - Rankings and leaderboards (sorted sets)
+- **CounterController** - Atomic counters and stats
+- **FormularyController** - Example domain controller (healthcare formulary)
+- **RadAppController** - Example domain controller (RAD app patterns)
 
 👉 **[Controllers Documentation](src/controllers/README.md)** - Complete guide with examples  
 👉 **[Example Application](demos/14-controller-app.ts)** - Full app using all controllers
@@ -80,7 +86,13 @@ const shopApp = createNamespacedRedis(redis, "shop");
 ### For Beginners
 - **[Controllers Guide](src/controllers/README.md)** - Production-ready controllers ⭐ START HERE
 - **[Example Application](demos/14-controller-app.ts)** - Complete app example ⭐
-- **[Demos](demos/)** - 11 comprehensive examples with best practices
+- **[Demos](demos/)** - 15 comprehensive examples with best practices
+
+Run all demos locally:
+
+```bash
+bun run demos
+```
 
 ### For Advanced Users
 - **[API.md](docs/API.md)** - Complete API reference with all methods
@@ -242,6 +254,15 @@ Deletes all keys in a namespace.
 
 ```typescript
 const deleted = await clearNamespace(redis, "myapp");
+
+#### `copyNamespace(redis, fromNamespace, toNamespace, options?)`
+
+Copies all keys from one namespace to another (useful for dev → staging → prod promotions within the same Redis instance).
+
+```typescript
+const result = await copyNamespace(redis, "myapp:dev", "myapp:staging", { replace: false });
+console.log(result); // { scanned, copied, skipped }
+```
 ```
 
 ### Available Operations
@@ -406,7 +427,7 @@ bun test
 bun test --watch
 ```
 
-The test suite includes 59 tests covering:
+The test suite includes 83 tests covering:
 - Core Redis operations
 - JSON operations
 - Multi operations
@@ -430,5 +451,3 @@ The test suite includes 59 tests covering:
 MIT
 
 ---
-
-Based on [bun_database_wrappers](https://github.com/codecaine-zz/bun_database_wrappers) project, refactored into a single file for easy import.

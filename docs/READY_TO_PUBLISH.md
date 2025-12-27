@@ -1,12 +1,12 @@
 # 🎉 NPM Package Ready!
 
-Your **@codecaine-zz/bun-redis-wrapper** package is now ready for publication!
+Your **@codecaine/bun-redis-wrapper** package is now ready for publication!
 
 ## ✅ What's Been Done
 
 ### 1. Package Configuration ✅
 - [x] Updated `package.json` with proper npm metadata
-- [x] Set package name: `@codecaine-zz/bun-redis-wrapper`
+- [x] Set package name: `@codecaine/bun-redis-wrapper`
 - [x] Configured proper exports for main and controllers
 - [x] Added build scripts and prepublish hooks
 - [x] Set up peer dependencies (Bun >= 1.0.0)
@@ -34,7 +34,7 @@ Your **@codecaine-zz/bun-redis-wrapper** package is now ready for publication!
 
 ### 5. Quality Assurance ✅
 - [x] All 83 unit tests passing
-- [x] All 11 demos tested and working
+- [x] All 15 demos tested and working
 - [x] Example application validated
 - [x] Package builds successfully
 - [x] TypeScript compilation successful
@@ -42,8 +42,8 @@ Your **@codecaine-zz/bun-redis-wrapper** package is now ready for publication!
 ## 📦 Package Summary
 
 ```
-Package: @codecaine-zz/bun-redis-wrapper
-Version: 1.0.0
+Package: @codecaine/bun-redis-wrapper
+Version: 1.1.0
 License: MIT
 Size: 42.2 KB compressed
 Files: 39 total
@@ -77,8 +77,8 @@ npm publish
 ### Verify Publication
 
 After publishing, check:
-- NPM: https://www.npmjs.com/package/@codecaine-zz/bun-redis-wrapper
-- Installation: `bun add @codecaine-zz/bun-redis-wrapper`
+- NPM: https://www.npmjs.com/package/@codecaine/bun-redis-wrapper
+- Installation: `bun add @codecaine/bun-redis-wrapper`
 
 ## 📚 Quick Reference
 
@@ -86,17 +86,17 @@ After publishing, check:
 
 ```bash
 # Users can install your package with:
-bun add @codecaine-zz/bun-redis-wrapper
-npm install @codecaine-zz/bun-redis-wrapper
-pnpm add @codecaine-zz/bun-redis-wrapper
-yarn add @codecaine-zz/bun-redis-wrapper
+bun add @codecaine/bun-redis-wrapper
+npm install @codecaine/bun-redis-wrapper
+pnpm add @codecaine/bun-redis-wrapper
+yarn add @codecaine/bun-redis-wrapper
 ```
 
 ### Usage Examples
 
 ```typescript
 // Basic usage
-import { createRedis } from "@codecaine-zz/bun-redis-wrapper";
+import { createRedis } from "@codecaine/bun-redis-wrapper";
 const redis = await createRedis();
 
 // Controllers (recommended)
@@ -104,7 +104,7 @@ import {
   SessionController,
   CacheController,
   RateLimiterController
-} from "@codecaine-zz/bun-redis-wrapper/controllers";
+} from "@codecaine/bun-redis-wrapper/controllers";
 
 const sessions = new SessionController(redis);
 const cache = new CacheController(redis);
@@ -243,8 +243,8 @@ npm publish --access public
 ## 🎊 Success!
 
 Once published, your package will be available at:
-- **NPM:** https://www.npmjs.com/package/@codecaine-zz/bun-redis-wrapper
-- **Install:** `bun add @codecaine-zz/bun-redis-wrapper`
+- **NPM:** https://www.npmjs.com/package/@codecaine/bun-redis-wrapper
+- **Install:** `bun add @codecaine/bun-redis-wrapper`
 
 Share it with the world! 🌍
 

@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } from "bun:test";
-import { createRedis, createNamespacedRedis, clearNamespace } from "../src/index";
+import { createRedis, createNamespacedRedis, clearNamespace, copyNamespace } from "../src/index";
 import type { RedisWrapper, NamespacedRedisWrapper } from "../src/index";
 
 const TEST_REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
@@ -763,6 +763,198 @@ describe("NamespacedRedisWrapper", () => {
       
       await clearNamespace(redis, "myapp:dev");
       await clearNamespace(redis, "myapp:prod");
+    });
+
+    test("should copy one namespace to another", async () => {
+      const dev = createNamespacedRedis(redis, "myapp:dev");
+      const stage = createNamespacedRedis(redis, "myapp:stage");
+
+      await dev.set("feature:new-ui", "true");
+      await dev.setJSON("config", { version: 1, enabled: true });
+      await dev.set("ttl:key", "value", { EX: 10 });
+      await dev.hmset("user:123", { name: "Alice", role: "admin" });
+
+      // Existing destination key should not be overwritten by default
+      await stage.set("feature:new-ui", "false");
+
+      const copy = await copyNamespace(redis, "myapp:dev", "myapp:stage");
+      expect(copy.scanned).toBeGreaterThanOrEqual(3);
+      expect(copy.copied).toBeGreaterThanOrEqual(2);
+      expect(copy.skipped).toBeGreaterThanOrEqual(1);
+
+      // Not overwritten
+      expect(await stage.get("feature:new-ui")).toBe("false");
+
+      // Copied values exist
+      expect(await stage.getJSON("config")).toEqual({ version: 1, enabled: true });
+      expect(await stage.hget("user:123", "name")).toBe("Alice");
+
+      // TTL preserved (approx)
+      const stageTtl = await redis.ttl("myapp:stage:ttl:key");
+      expect(stageTtl).toBeGreaterThan(0);
+
+      await clearNamespace(redis, "myapp:dev");
+      await clearNamespace(redis, "myapp:stage");
+    });
+
+    test("should copy namespace with replace option", async () => {
+      const dev = createNamespacedRedis(redis, "myapp:dev");
+      const stage = createNamespacedRedis(redis, "myapp:stage");
+
+      await dev.set("feature:new-ui", "true");
+      await dev.set("feature:dark-mode", "enabled");
+      await stage.set("feature:new-ui", "false");
+
+      const copy = await copyNamespace(redis, "myapp:dev", "myapp:stage", { replace: true });
+      expect(copy.scanned).toBeGreaterThanOrEqual(2);
+      expect(copy.copied).toBe(2);
+      expect(copy.skipped).toBe(0);
+
+      // Should be overwritten
+      expect(await stage.get("feature:new-ui")).toBe("true");
+      expect(await stage.get("feature:dark-mode")).toBe("enabled");
+
+      await clearNamespace(redis, "myapp:dev");
+      await clearNamespace(redis, "myapp:stage");
+    });
+
+    test("should copy namespace with dryRun option", async () => {
+      const dev = createNamespacedRedis(redis, "myapp:dev");
+      const stage = createNamespacedRedis(redis, "myapp:stage");
+
+      await dev.set("feature:new-ui", "true");
+      await dev.set("feature:dark-mode", "enabled");
+
+      const copy = await copyNamespace(redis, "myapp:dev", "myapp:stage", { dryRun: true });
+      expect(copy.scanned).toBeGreaterThanOrEqual(2);
+      expect(copy.copied).toBe(2);
+      expect(copy.skipped).toBe(0);
+
+      // Nothing should actually be copied
+      expect(await stage.get("feature:new-ui")).toBeNull();
+      expect(await stage.get("feature:dark-mode")).toBeNull();
+
+      await clearNamespace(redis, "myapp:dev");
+      await clearNamespace(redis, "myapp:stage");
+    });
+
+    test("should copy namespace with match pattern", async () => {
+      const dev = createNamespacedRedis(redis, "myapp:dev");
+      const stage = createNamespacedRedis(redis, "myapp:stage");
+
+      await dev.set("feature:new-ui", "true");
+      await dev.set("feature:dark-mode", "enabled");
+      await dev.set("config:timeout", "5000");
+      await dev.set("config:retries", "3");
+
+      // Only copy feature:* keys
+      const copy = await copyNamespace(redis, "myapp:dev", "myapp:stage", { match: "feature:*" });
+      expect(copy.scanned).toBe(2);
+      expect(copy.copied).toBe(2);
+
+      // Features copied
+      expect(await stage.get("feature:new-ui")).toBe("true");
+      expect(await stage.get("feature:dark-mode")).toBe("enabled");
+
+      // Config not copied
+      expect(await stage.get("config:timeout")).toBeNull();
+      expect(await stage.get("config:retries")).toBeNull();
+
+      await clearNamespace(redis, "myapp:dev");
+      await clearNamespace(redis, "myapp:stage");
+    });
+
+    test("should copy namespace with different data types", async () => {
+      const dev = createNamespacedRedis(redis, "myapp:dev");
+      const stage = createNamespacedRedis(redis, "myapp:stage");
+
+      // String
+      await dev.set("string:key", "value");
+      
+      // JSON
+      await dev.setJSON("json:key", { name: "test", value: 123 });
+      
+      // Hash
+      await dev.hmset("hash:key", { field1: "val1", field2: "val2" });
+      
+      // List
+      await dev.rpush("list:key", "item1", "item2", "item3");
+      
+      // Set
+      await dev.sadd("set:key", "member1", "member2", "member3");
+      
+      // Sorted Set
+      await dev.zadd("zset:key", [1.0, "first"], [2.0, "second"], [3.0, "third"]);
+
+      const copy = await copyNamespace(redis, "myapp:dev", "myapp:stage");
+      expect(copy.scanned).toBeGreaterThanOrEqual(6);
+      expect(copy.copied).toBeGreaterThanOrEqual(6);
+
+      // Verify all types copied correctly
+      expect(await stage.get("string:key")).toBe("value");
+      expect(await stage.getJSON("json:key")).toEqual({ name: "test", value: 123 });
+      expect(await stage.hgetAll("hash:key")).toEqual({ field1: "val1", field2: "val2" });
+      expect(await stage.lrange("list:key", 0, -1)).toEqual(["item1", "item2", "item3"]);
+      expect(await stage.smembers("set:key")).toEqual(expect.arrayContaining(["member1", "member2", "member3"]));
+      
+      const zsetMembers = await stage.zrange("zset:key", 0, -1);
+      expect(zsetMembers).toEqual(["first", "second", "third"]);
+
+      await clearNamespace(redis, "myapp:dev");
+      await clearNamespace(redis, "myapp:stage");
+    });
+
+    test("should preserve TTL when copying", async () => {
+      const dev = createNamespacedRedis(redis, "myapp:dev");
+      const stage = createNamespacedRedis(redis, "myapp:stage");
+
+      // Set key with TTL
+      await dev.set("temp:key", "value", { EX: 100 });
+      
+      // Set key without TTL
+      await dev.set("permanent:key", "value");
+
+      await copyNamespace(redis, "myapp:dev", "myapp:stage");
+
+      // Check TTL is preserved (approximately)
+      const tempTtl = await redis.ttl("myapp:stage:temp:key");
+      expect(tempTtl).toBeGreaterThan(90);
+      expect(tempTtl).toBeLessThanOrEqual(100);
+
+      // Check permanent key has no TTL
+      const permTtl = await redis.ttl("myapp:stage:permanent:key");
+      expect(permTtl).toBe(-1);
+
+      await clearNamespace(redis, "myapp:dev");
+      await clearNamespace(redis, "myapp:stage");
+    });
+
+    test("should throw error when copying to same namespace", async () => {
+      expect(async () => {
+        await copyNamespace(redis, "myapp:dev", "myapp:dev");
+      }).toThrow("fromNamespace and toNamespace must be different");
+    });
+
+    test("should handle empty namespace", async () => {
+      const copy = await copyNamespace(redis, "myapp:empty1", "myapp:empty2");
+      expect(copy.scanned).toBe(0);
+      expect(copy.copied).toBe(0);
+      expect(copy.skipped).toBe(0);
+    });
+
+    test("should handle namespace with trailing colons", async () => {
+      const dev = createNamespacedRedis(redis, "myapp:dev");
+      const stage = createNamespacedRedis(redis, "myapp:stage");
+
+      await dev.set("feature:test", "value");
+
+      // Should work with trailing colons
+      const copy = await copyNamespace(redis, "myapp:dev:", "myapp:stage:");
+      expect(copy.copied).toBeGreaterThanOrEqual(1);
+      expect(await stage.get("feature:test")).toBe("value");
+
+      await clearNamespace(redis, "myapp:dev");
+      await clearNamespace(redis, "myapp:stage");
     });
   });
 

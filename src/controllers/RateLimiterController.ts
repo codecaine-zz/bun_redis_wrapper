@@ -19,8 +19,8 @@
  * ```
  */
 
-import type { RedisWrapper } from "../redis-wrapper.ts";
-import { createNamespacedRedis } from "../index";
+import { RedisWrapper } from "../redis-wrapper";
+import { createNamespacedRedis, type NamespacedRedisWrapper } from "../index";
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -42,11 +42,12 @@ export interface RateLimitOptions {
 }
 
 export class RateLimiterController {
-  private redis: any;
-  private namespace = "ratelimit";
+  private redis: NamespacedRedisWrapper;
 
-  constructor(redis: RedisWrapper) {
-    this.redis = createNamespacedRedis(redis, this.namespace);
+  constructor(redis: RedisWrapper | NamespacedRedisWrapper, namespace: string = "ratelimit") {
+    this.redis = redis instanceof RedisWrapper
+      ? createNamespacedRedis(redis, namespace)
+      : redis;
   }
 
   /**

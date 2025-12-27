@@ -2,8 +2,8 @@
 
 ## 📦 Package Information
 
-**Package Name:** `@codecaine-zz/bun-redis-wrapper`  
-**Version:** 1.0.0  
+**Package Name:** `@codecaine/bun-redis-wrapper`  
+**Version:** 1.1.0  
 **License:** MIT  
 **Size:** 42.2 KB (compressed) / 216.1 KB (unpacked)  
 **Total Files:** 39
@@ -14,52 +14,49 @@
 - ✅ All type definitions generated
 - ✅ Source maps included
 - ✅ All 83 unit tests passing
-- ✅ All 11 demos tested and working
+- ✅ All 15 demos tested and working
 - ✅ Example application validated
 
 ## 📥 Installation
 
 ```bash
 # Using Bun (recommended)
-bun add @codecaine-zz/bun-redis-wrapper
+bun add @codecaine/bun-redis-wrapper
 
 # Using npm
-npm install @codecaine-zz/bun-redis-wrapper
+npm install @codecaine/bun-redis-wrapper
 
 # Using pnpm
-pnpm add @codecaine-zz/bun-redis-wrapper
+pnpm add @codecaine/bun-redis-wrapper
 
 # Using yarn
-yarn add @codecaine-zz/bun-redis-wrapper
+yarn add @codecaine/bun-redis-wrapper
 ```
-
-## 🚀 Quick Start
 
 ### Basic Usage
 
 ```typescript
-import { createRedis, createNamespacedRedis } from "@codecaine-zz/bun-redis-wrapper";
+import { createRedis, createNamespacedRedis } from "@codecaine/bun-redis-wrapper";
 
 // Create Redis connection
 const redis = await createRedis();
 
-// Create namespaced wrapper
+// Create a namespace for your app
 const app = createNamespacedRedis(redis, "myapp");
 
 // Use it!
 await app.set("user:123", "data");
-const data = await app.get("user:123");
 ```
 
 ### Using Controllers (Recommended)
 
 ```typescript
-import { createRedis } from "@codecaine-zz/bun-redis-wrapper";
+import { createRedis } from "@codecaine/bun-redis-wrapper";
 import {
   SessionController,
   CacheController,
-  RateLimiterController
-} from "@codecaine-zz/bun-redis-wrapper/controllers";
+  RateLimiterController,
+} from "@codecaine/bun-redis-wrapper/controllers";
 
 const redis = await createRedis();
 
@@ -86,15 +83,16 @@ if (!allowed.success) {
 
 ## 📦 Package Contents
 
-### Main Export (`@codecaine-zz/bun-redis-wrapper`)
+### Main Export (`@codecaine/bun-redis-wrapper`)
 
 - `createRedis()` - Create Redis connection
 - `createNamespacedRedis()` - Create namespaced wrapper
 - `clearNamespace()` - Clear all keys in namespace
+- `copyNamespace()` - Copy keys between namespaces
 - `RedisWrapper` interface - Core Redis operations
 - `NamespacedRedisWrapper` interface - Namespaced operations
 
-### Controllers Export (`@codecaine-zz/bun-redis-wrapper/controllers`)
+### Controllers Export (`@codecaine/bun-redis-wrapper/controllers`)
 
 All production-ready controllers:
 
@@ -132,8 +130,8 @@ All production-ready controllers:
 
 ```typescript
 // Import specific controllers
-import { SessionController } from "@codecaine-zz/bun-redis-wrapper/controllers/SessionController";
-import { CacheController } from "@codecaine-zz/bun-redis-wrapper/controllers/CacheController";
+import { SessionController } from "@codecaine/bun-redis-wrapper/controllers/SessionController";
+import { CacheController } from "@codecaine/bun-redis-wrapper/controllers/CacheController";
 ```
 
 ## 📁 Distributed Files
@@ -204,7 +202,7 @@ Full documentation is available in the repository:
 
 The package includes:
 - 83 unit tests (all passing)
-- 11 comprehensive demos
+- 15 comprehensive demos
 - Complete example application
 - Real-world usage patterns
 
@@ -218,7 +216,7 @@ The package includes:
 ## 📊 Package Stats
 
 - **Minified:** ~42 KB
-- **Controllers:** 6 production-ready
+- **Controllers:** 12 production-ready
 - **Redis Commands:** 40+ wrapped
 - **Type Definitions:** Full coverage
 - **Source Maps:** Included
@@ -246,8 +244,8 @@ See [PUBLISHING.md](PUBLISHING.md) for complete publishing guide.
 
 ```typescript
 import express from "express";
-import { createRedis } from "@codecaine-zz/bun-redis-wrapper";
-import { SessionController, RateLimiterController } from "@codecaine-zz/bun-redis-wrapper/controllers";
+import { createRedis } from "@codecaine/bun-redis-wrapper";
+import { SessionController, RateLimiterController } from "@codecaine/bun-redis-wrapper/controllers";
 
 const app = express();
 const redis = await createRedis();
@@ -280,8 +278,8 @@ app.use(async (req, res, next) => {
 
 ```typescript
 import { Hono } from "hono";
-import { createRedis } from "@codecaine-zz/bun-redis-wrapper";
-import { CacheController } from "@codecaine-zz/bun-redis-wrapper/controllers";
+import { createRedis } from "@codecaine/bun-redis-wrapper";
+import { CacheController } from "@codecaine/bun-redis-wrapper/controllers";
 
 const app = new Hono();
 const redis = await createRedis();
@@ -321,7 +319,7 @@ Potential future enhancements:
 
 - **Repository:** https://github.com/codecaine-zz/bun_redis_wrapper
 - **Issues:** https://github.com/codecaine-zz/bun_redis_wrapper/issues
-- **NPM:** https://www.npmjs.com/package/@codecaine-zz/bun-redis-wrapper
+- **NPM:** https://www.npmjs.com/package/@codecaine/bun-redis-wrapper
 
 ## 👏 Credits
 

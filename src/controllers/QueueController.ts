@@ -22,8 +22,8 @@
  * ```
  */
 
-import type { RedisWrapper } from "../redis-wrapper.ts";
-import { createNamespacedRedis } from "../index";
+import { RedisWrapper } from "../redis-wrapper";
+import { createNamespacedRedis, type NamespacedRedisWrapper } from "../index";
 
 export interface Job<T = any> {
   id: string;
@@ -56,10 +56,12 @@ export interface QueueStats {
 }
 
 export class QueueController {
-  private redis: any;
+  private redis: NamespacedRedisWrapper;
 
-  constructor(redis: RedisWrapper) {
-    this.redis = createNamespacedRedis(redis, "queue");
+  constructor(redis: RedisWrapper | NamespacedRedisWrapper, namespace: string = "queue") {
+    this.redis = redis instanceof RedisWrapper
+      ? createNamespacedRedis(redis, namespace)
+      : redis;
   }
 
   /**
@@ -108,13 +110,24 @@ export class QueueController {
     const now = Date.now();
 
     // Get jobs that are ready to process (score <= now)
-    const results = await this.redis.command("ZRANGEBYSCORE", "pending", 0, now, "LIMIT", 0, 1) as string[];
+    const results = await this.redis.command<string[]>(
+      "ZRANGEBYSCORE",
+      "pending",
+      0,
+      now,
+      "LIMIT",
+      0,
+      1
+    );
 
     if (!results || results.length === 0) {
       return null;
     }
 
     const jobId = results[0];
+    if (!jobId) {
+      return null;
+    }
 
     // Move to processing
     await this.redis.zrem("pending", jobId);
@@ -198,16 +211,16 @@ export class QueueController {
    * @returns Status: "pending", "processing", "completed", "failed", or "unknown"
    */
   async getStatus(jobId: string): Promise<"pending" | "processing" | "completed" | "failed" | "unknown"> {
-    const isPending = await this.redis.command("ZSCORE", "pending", jobId);
+    const isPending = await this.redis.command<string | null>("ZSCORE", "pending", jobId);
     if (isPending !== null) return "pending";
 
-    const isProcessing = await this.redis.command("ZSCORE", "processing", jobId);
+    const isProcessing = await this.redis.command<string | null>("ZSCORE", "processing", jobId);
     if (isProcessing !== null) return "processing";
 
-    const isCompleted = await this.redis.command("SISMEMBER", "completed", jobId);
+    const isCompleted = await this.redis.command<number>("SISMEMBER", "completed", jobId);
     if (isCompleted === 1) return "completed";
 
-    const isFailed = await this.redis.command("SISMEMBER", "failed", jobId);
+    const isFailed = await this.redis.command<number>("SISMEMBER", "failed", jobId);
     if (isFailed === 1) return "failed";
 
     return "unknown";
@@ -221,8 +234,8 @@ export class QueueController {
   async getStats(): Promise<QueueStats> {
     const pending = await this.redis.zcard("pending");
     const processing = await this.redis.zcard("processing");
-    const completed = await this.redis.command("SCARD", "completed");
-    const failed = await this.redis.command("SCARD", "failed");
+    const completed = await this.redis.command<number>("SCARD", "completed");
+    const failed = await this.redis.command<number>("SCARD", "failed");
 
     return {
       pending,
@@ -238,7 +251,7 @@ export class QueueController {
    * @returns Map of job type to count
    */
   async getJobCountByType(): Promise<Record<string, number>> {
-    const pending = await this.redis.command("ZRANGE", "pending", 0, -1);
+    const pending = await this.redis.command<string[]>("ZRANGE", "pending", 0, -1);
     const counts: Record<string, number> = {};
 
     for (const jobId of pending) {
@@ -273,7 +286,7 @@ export class QueueController {
    * @returns True if retried
    */
   async retry(jobId: string): Promise<boolean> {
-    const isFailed = await this.redis.command("SISMEMBER", "failed", jobId);
+    const isFailed = await this.redis.command<number>("SISMEMBER", "failed", jobId);
 
     if (isFailed !== 1) {
       return false;
@@ -307,7 +320,7 @@ export class QueueController {
     let cleaned = 0;
 
     // Clean completed
-    const completed = await this.redis.command("SMEMBERS", "completed");
+    const completed = await this.redis.command<string[]>("SMEMBERS", "completed");
     for (const jobId of completed) {
       const job = await this.getJob(jobId);
       if (job && job.createdAt < cutoff) {
@@ -318,7 +331,7 @@ export class QueueController {
     }
 
     // Clean failed
-    const failed = await this.redis.command("SMEMBERS", "failed");
+    const failed = await this.redis.command<string[]>("SMEMBERS", "failed");
     for (const jobId of failed) {
       const job = await this.getJob(jobId);
       if (job && job.createdAt < cutoff) {
@@ -339,7 +352,7 @@ export class QueueController {
 
     // Delete all job data
     const pattern = "job:*";
-    const keys = await this.redis.command("KEYS", pattern);
+    const keys = await this.redis.command<string[]>("KEYS", pattern);
     if (keys.length > 0) {
       await this.redis.del(...keys);
     }

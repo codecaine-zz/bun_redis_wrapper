@@ -33,7 +33,8 @@
  * ```
  */
 
-import type { RedisWrapper } from "../redis-wrapper";
+import { RedisWrapper } from "../redis-wrapper";
+import { createNamespacedRedis, type NamespacedRedisWrapper } from "../index";
 
 // ============================================================================
 // Types
@@ -85,13 +86,14 @@ export interface FormularySearchOptions {
 // ============================================================================
 
 export class FormularyController {
-  private prefix: string;
+  private redis: NamespacedRedisWrapper;
+  private planId: string;
 
-  constructor(
-    private redis: RedisWrapper,
-    private planId: string = "default"
-  ) {
-    this.prefix = `formulary:${planId}`;
+  constructor(redis: RedisWrapper | NamespacedRedisWrapper, planId: string = "default") {
+    this.planId = planId;
+    this.redis = redis instanceof RedisWrapper
+      ? createNamespacedRedis(redis, `formulary:${planId}`)
+      : redis;
   }
 
   // ==========================================================================
@@ -102,13 +104,13 @@ export class FormularyController {
    * Add or update a drug in the formulary
    */
   async addDrug(drug: Drug): Promise<void> {
-    const key = `${this.prefix}:drug:${drug.ndc}`;
+    const key = `drug:${drug.ndc}`;
     
     // Store drug data as JSON
     await this.redis.setJSON(key, drug);
 
     // Add to tier index for filtering
-    await this.redis.command("SADD", `${this.prefix}:tier:${drug.tier}`, drug.ndc);
+    await this.redis.sadd(`tier:${drug.tier}`, drug.ndc);
 
     // Add to search indexes
     const searchTerms = [
@@ -118,25 +120,24 @@ export class FormularyController {
     
     for (const term of searchTerms) {
       if (term.length >= 3) {
-        await this.redis.command("SADD", `${this.prefix}:search:${term}`, drug.ndc);
+        await this.redis.sadd(`search:${term}`, drug.ndc);
       }
     }
 
     // Add to PA index if required
     if (drug.requiresPA) {
-      await this.redis.command("SADD", `${this.prefix}:pa-required`, drug.ndc);
+      await this.redis.sadd("pa-required", drug.ndc);
     }
 
     // Add to step therapy index
     if (drug.stepTherapy) {
-      await this.redis.command("SADD", `${this.prefix}:step-therapy`, drug.ndc);
+      await this.redis.sadd("step-therapy", drug.ndc);
     }
 
     // Add to therapeutic class index
     if (drug.therapeuticClass) {
-      await this.redis.command(
-        "SADD",
-        `${this.prefix}:class:${drug.therapeuticClass.toLowerCase()}`,
+      await this.redis.sadd(
+        `class:${drug.therapeuticClass.toLowerCase()}`,
         drug.ndc
       );
     }
@@ -146,8 +147,7 @@ export class FormularyController {
    * Get drug details by NDC
    */
   async getDrug(ndc: string): Promise<Drug | null> {
-    const key = `${this.prefix}:drug:${ndc}`;
-    return await this.redis.getJSON<Drug>(key);
+    return await this.redis.getJSON<Drug>(`drug:${ndc}`);
   }
 
   /**
@@ -170,18 +170,16 @@ export class FormularyController {
     if (!drug) return false;
 
     // Remove main record
-    const key = `${this.prefix}:drug:${ndc}`;
-    await this.redis.del(key);
+    await this.redis.del(`drug:${ndc}`);
 
     // Remove from all indexes
-    await this.redis.command("SREM", `${this.prefix}:tier:${drug.tier}`, ndc);
-    await this.redis.command("SREM", `${this.prefix}:pa-required`, ndc);
-    await this.redis.command("SREM", `${this.prefix}:step-therapy`, ndc);
+    await this.redis.srem(`tier:${drug.tier}`, ndc);
+    await this.redis.srem("pa-required", ndc);
+    await this.redis.srem("step-therapy", ndc);
     
     if (drug.therapeuticClass) {
-      await this.redis.command(
-        "SREM",
-        `${this.prefix}:class:${drug.therapeuticClass.toLowerCase()}`,
+      await this.redis.srem(
+        `class:${drug.therapeuticClass.toLowerCase()}`,
         ndc
       );
     }
@@ -223,12 +221,11 @@ export class FormularyController {
     if (terms.length === 0) return [];
 
     // Get NDCs from first search term
-    const firstKey = `${this.prefix}:search:${terms[0]}`;
-    let ndcs = await this.redis.command("SMEMBERS", firstKey) as string[];
+    let ndcs = await this.redis.smembers(`search:${terms[0]}`);
 
     // Intersect with other terms if multiple
     if (terms.length > 1) {
-      const keys = terms.map(t => `${this.prefix}:search:${t}`);
+      const keys = terms.map(t => `search:${t}`);
       ndcs = await this.redis.command("SINTER", ...keys) as string[];
     }
 
@@ -246,10 +243,7 @@ export class FormularyController {
    * Get all drugs in a specific tier
    */
   async getDrugsByTier(tier: number): Promise<Drug[]> {
-    const ndcs = await this.redis.command(
-      "SMEMBERS",
-      `${this.prefix}:tier:${tier}`
-    ) as string[];
+    const ndcs = await this.redis.smembers(`tier:${tier}`);
 
     const drugs: Drug[] = [];
     for (const ndc of ndcs) {
@@ -264,10 +258,7 @@ export class FormularyController {
    * Get drugs requiring prior authorization
    */
   async getDrugsRequiringPA(): Promise<Drug[]> {
-    const ndcs = await this.redis.command(
-      "SMEMBERS",
-      `${this.prefix}:pa-required`
-    ) as string[];
+    const ndcs = await this.redis.smembers("pa-required");
 
     const drugs: Drug[] = [];
     for (const ndc of ndcs) {
@@ -282,10 +273,7 @@ export class FormularyController {
    * Get drugs with step therapy
    */
   async getDrugsWithStepTherapy(): Promise<Drug[]> {
-    const ndcs = await this.redis.command(
-      "SMEMBERS",
-      `${this.prefix}:step-therapy`
-    ) as string[];
+    const ndcs = await this.redis.smembers("step-therapy");
 
     const drugs: Drug[] = [];
     for (const ndc of ndcs) {
@@ -300,10 +288,7 @@ export class FormularyController {
    * Get drugs by therapeutic class
    */
   async getDrugsByClass(therapeuticClass: string): Promise<Drug[]> {
-    const ndcs = await this.redis.command(
-      "SMEMBERS",
-      `${this.prefix}:class:${therapeuticClass.toLowerCase()}`
-    ) as string[];
+    const ndcs = await this.redis.smembers(`class:${therapeuticClass.toLowerCase()}`);
 
     const drugs: Drug[] = [];
     for (const ndc of ndcs) {
@@ -321,19 +306,19 @@ export class FormularyController {
     const sets: string[] = [];
 
     if (options.tier !== undefined) {
-      sets.push(`${this.prefix}:tier:${options.tier}`);
+      sets.push(`tier:${options.tier}`);
     }
 
     if (options.requiresPA !== undefined && options.requiresPA) {
-      sets.push(`${this.prefix}:pa-required`);
+      sets.push("pa-required");
     }
 
     if (options.stepTherapy !== undefined && options.stepTherapy) {
-      sets.push(`${this.prefix}:step-therapy`);
+      sets.push("step-therapy");
     }
 
     if (options.therapeuticClass) {
-      sets.push(`${this.prefix}:class:${options.therapeuticClass.toLowerCase()}`);
+      sets.push(`class:${options.therapeuticClass.toLowerCase()}`);
     }
 
     if (sets.length === 0) return [];
@@ -361,7 +346,7 @@ export class FormularyController {
    * Add step therapy rule
    */
   async addStepTherapyRule(rule: StepTherapyRule): Promise<void> {
-    const key = `${this.prefix}:step-rule:${rule.drugNDC}`;
+    const key = `step-rule:${rule.drugNDC}`;
     await this.redis.setJSON(key, rule);
   }
 
@@ -369,7 +354,7 @@ export class FormularyController {
    * Get step therapy rule for a drug
    */
   async getStepTherapyRule(drugNDC: string): Promise<StepTherapyRule | null> {
-    const key = `${this.prefix}:step-rule:${drugNDC}`;
+    const key = `step-rule:${drugNDC}`;
     return await this.redis.getJSON<StepTherapyRule>(key);
   }
 
@@ -404,7 +389,7 @@ export class FormularyController {
    * Add PA criteria for a drug
    */
   async addPACriteria(criteria: PriorAuthCriteria): Promise<void> {
-    const key = `${this.prefix}:pa-criteria:${criteria.drugNDC}`;
+    const key = `pa-criteria:${criteria.drugNDC}`;
     await this.redis.setJSON(key, criteria);
   }
 
@@ -412,7 +397,7 @@ export class FormularyController {
    * Get PA criteria for a drug
    */
   async getPACriteria(drugNDC: string): Promise<PriorAuthCriteria | null> {
-    const key = `${this.prefix}:pa-criteria:${drugNDC}`;
+    const key = `pa-criteria:${drugNDC}`;
     return await this.redis.getJSON<PriorAuthCriteria>(key);
   }
 
@@ -425,7 +410,7 @@ export class FormularyController {
     patientId: string,
     prescriberId: string
   ): Promise<void> {
-    const key = `${this.prefix}:pa-request:${requestId}`;
+    const key = `pa-request:${requestId}`;
     const data = {
       requestId,
       drugNDC,
@@ -438,18 +423,14 @@ export class FormularyController {
     await this.redis.setJSON(key, data, { EX: 30 * 24 * 60 * 60 }); // 30 day TTL
     
     // Add to patient's PA list
-    await this.redis.command(
-      "SADD",
-      `${this.prefix}:pa-requests:patient:${patientId}`,
-      requestId
-    );
+    await this.redis.sadd(`pa-requests:patient:${patientId}`, requestId);
   }
 
   /**
    * Get PA status
    */
   async getPAStatus(requestId: string): Promise<any> {
-    const key = `${this.prefix}:pa-request:${requestId}`;
+    const key = `pa-request:${requestId}`;
     return await this.redis.getJSON(key);
   }
 
@@ -471,7 +452,7 @@ export class FormularyController {
     for (let tier = 1; tier <= 5; tier++) {
       const count = await this.redis.command(
         "SCARD",
-        `${this.prefix}:tier:${tier}`
+        `tier:${tier}`
       ) as number;
       tierCounts[tier] = count;
     }
@@ -480,12 +461,12 @@ export class FormularyController {
     
     const paRequired = await this.redis.command(
       "SCARD",
-      `${this.prefix}:pa-required`
+      "pa-required"
     ) as number;
 
     const stepTherapy = await this.redis.command(
       "SCARD",
-      `${this.prefix}:step-therapy`
+      "step-therapy"
     ) as number;
 
     return {
@@ -500,8 +481,7 @@ export class FormularyController {
    * Get therapeutic classes
    */
   async getTherapeuticClasses(): Promise<string[]> {
-    const pattern = `${this.prefix}:class:*`;
-    const keys = await this.redis.scanAll(pattern);
+    const keys = await this.redis.scanAll("class:*");
     
     return keys.map(key => {
       const parts = key.split(":");
@@ -517,8 +497,7 @@ export class FormularyController {
    * Clear all formulary data (use with caution!)
    */
   async clearFormulary(): Promise<void> {
-    const pattern = `${this.prefix}:*`;
-    const keys = await this.redis.scanAll(pattern);
+    const keys = await this.redis.scanAll("*");
     
     if (keys.length > 0) {
       await this.redis.del(...keys);

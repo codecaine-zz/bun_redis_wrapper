@@ -22,7 +22,8 @@
  * ```
  */
 
-import type { RedisWrapper } from "../redis-wrapper.ts";
+import { RedisWrapper } from "../redis-wrapper";
+import { createNamespacedRedis, type NamespacedRedisWrapper } from "../index";
 
 export interface EventStats {
   total: number;
@@ -35,11 +36,12 @@ export interface TimeSeriesData {
 }
 
 export class AnalyticsController {
-  private redis: RedisWrapper;
-  private namespace = "analytics";
+  private redis: NamespacedRedisWrapper;
 
-  constructor(redis: RedisWrapper) {
-    this.redis = redis;
+  constructor(redis: RedisWrapper | NamespacedRedisWrapper, namespace: string = "analytics") {
+    this.redis = redis instanceof RedisWrapper
+      ? createNamespacedRedis(redis, namespace)
+      : redis;
   }
 
   /**
@@ -50,8 +52,7 @@ export class AnalyticsController {
    * @param identifier - Unique identifier (user ID, IP, etc.)
    */
   async trackUnique(metric: string, identifier: string): Promise<void> {
-    const key = this.getKey(`unique:${metric}`);
-    await this.redis.pfadd(key, identifier);
+    await this.redis.pfadd(`unique:${metric}`, identifier);
   }
 
   /**
@@ -61,8 +62,7 @@ export class AnalyticsController {
    * @returns Approximate unique count (±0.81% error)
    */
   async getUniqueCount(metric: string): Promise<number> {
-    const key = this.getKey(`unique:${metric}`);
-    return await this.redis.pfcount(key);
+    return await this.redis.pfcount(`unique:${metric}`);
   }
 
   /**
@@ -73,9 +73,8 @@ export class AnalyticsController {
    * @param sourceMetrics - Source metric names to merge
    */
   async mergeUnique(destMetric: string, ...sourceMetrics: string[]): Promise<void> {
-    const destKey = this.getKey(`unique:${destMetric}`);
-    const sourceKeys = sourceMetrics.map(m => this.getKey(`unique:${m}`));
-    await this.redis.pfmerge(destKey, ...sourceKeys);
+    const sourceKeys = sourceMetrics.map(m => `unique:${m}`);
+    await this.redis.pfmerge(`unique:${destMetric}`, ...sourceKeys);
   }
 
   /**
@@ -86,8 +85,7 @@ export class AnalyticsController {
    * @param userId - Optional user identifier for unique tracking
    */
   async trackEvent(eventType: string, eventName: string, userId?: string): Promise<void> {
-    const countKey = this.getKey(`event:${eventType}:${eventName}`);
-    await this.redis.incr(countKey);
+    await this.redis.incr(`event:${eventType}:${eventName}`);
 
     // Also track unique if userId provided
     if (userId) {
@@ -103,8 +101,7 @@ export class AnalyticsController {
    * @returns Total event count
    */
   async getEventCount(eventType: string, eventName: string): Promise<number> {
-    const countKey = this.getKey(`event:${eventType}:${eventName}`);
-    const count = await this.redis.get(countKey);
+    const count = await this.redis.get(`event:${eventType}:${eventName}`);
     return count ? parseInt(count) : 0;
   }
 
@@ -166,7 +163,7 @@ export class AnalyticsController {
     const count = await this.getUniqueCount(tempKey);
 
     // Clean up temporary key
-    await this.redis.del(this.getKey(`unique:${tempKey}`));
+    await this.redis.del(`unique:${tempKey}`);
 
     return count;
   }
@@ -193,7 +190,7 @@ export class AnalyticsController {
     const count = await this.getUniqueCount(tempKey);
 
     // Clean up temporary key
-    await this.redis.del(this.getKey(`unique:${tempKey}`));
+    await this.redis.del(`unique:${tempKey}`);
 
     return count;
   }
@@ -208,7 +205,7 @@ export class AnalyticsController {
   async trackTimeSeries(metric: string, value: number, timestamp?: Date): Promise<void> {
     const ts = timestamp || new Date();
     const dateStr = this.formatDate(ts);
-    const key = this.getKey(`timeseries:${metric}:${dateStr}`);
+    const key = `timeseries:${metric}:${dateStr}`;
     
     if (value === 1) {
       await this.redis.incr(key);
@@ -234,7 +231,7 @@ export class AnalyticsController {
 
     while (current <= endDate) {
       const dateStr = this.formatDate(current);
-      const key = this.getKey(`timeseries:${metric}:${dateStr}`);
+      const key = `timeseries:${metric}:${dateStr}`;
       const value = await this.redis.get(key);
 
       data.push({
@@ -256,7 +253,7 @@ export class AnalyticsController {
    * @returns New value
    */
   async increment(counter: string, amount: number = 1): Promise<number> {
-    const key = this.getKey(`counter:${counter}`);
+    const key = `counter:${counter}`;
     if (amount === 1) {
       return await this.redis.incr(key);
     }
@@ -270,7 +267,7 @@ export class AnalyticsController {
    * @returns Counter value
    */
   async getCounter(counter: string): Promise<number> {
-    const key = this.getKey(`counter:${counter}`);
+    const key = `counter:${counter}`;
     const value = await this.redis.get(key);
     return value ? parseInt(value) : 0;
   }
@@ -281,7 +278,7 @@ export class AnalyticsController {
    * @param counter - Counter name
    */
   async resetCounter(counter: string): Promise<void> {
-    const key = this.getKey(`counter:${counter}`);
+    const key = `counter:${counter}`;
     await this.redis.del(key);
   }
 
@@ -336,8 +333,7 @@ export class AnalyticsController {
    * @returns Number of keys deleted
    */
   async clearMetric(metric: string): Promise<number> {
-    const pattern = this.getKey(`*${metric}*`);
-    const keys = await this.redis.scanAll(pattern);
+    const keys = await this.redis.scanAll(`*${metric}*`);
 
     if (keys.length === 0) {
       return 0;
@@ -352,16 +348,13 @@ export class AnalyticsController {
    * @returns Array of metric names
    */
   async listMetrics(): Promise<string[]> {
-    const pattern = this.getKey("*");
-    const keys = await this.redis.scanAll(pattern);
+    const keys = await this.redis.scanAll("*");
 
-    // Remove namespace prefix and extract unique metric names
-    const prefix = `${this.namespace}:`;
+    // Extract unique metric names
     const metrics = new Set<string>();
 
     for (const key of keys) {
-      const withoutPrefix = key.replace(prefix, "");
-      const parts = withoutPrefix.split(":");
+      const parts = key.split(":");
       if (parts.length >= 2 && parts[1]) {
         metrics.add(parts[1]);
       }
@@ -380,10 +373,4 @@ export class AnalyticsController {
     return `${year}-${month}-${day}`;
   }
 
-  /**
-   * Get full key with namespace
-   */
-  private getKey(key: string): string {
-    return `${this.namespace}:${key}`;
-  }
 }

@@ -15,8 +15,8 @@
  */
 
 import { createRedis } from "../src/index";
-import { FormularyController } from "../controllers/FormularyController";
-import type { Drug, StepTherapyRule, PriorAuthCriteria } from "../controllers/FormularyController";
+import { FormularyController } from "../src/controllers/FormularyController";
+import type { Drug, StepTherapyRule, PriorAuthCriteria } from "../src/controllers/FormularyController";
 
 console.log("🏥 Medicare Part D Formulary Management Demo\n");
 console.log("=".repeat(70));

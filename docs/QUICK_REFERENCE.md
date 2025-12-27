@@ -180,6 +180,9 @@ await shop.set("session:123", "data"); // stored as "shop:session:123"
 
 // Clear namespace
 const deleted = await clearNamespace(redis, "auth");
+// Copy namespace (e.g., dev -> staging)
+const result = await copyNamespace(redis, "myapp:dev", "myapp:staging");
+console.log(result); // { scanned, copied, skipped }
 ```
 
 ## Common Patterns

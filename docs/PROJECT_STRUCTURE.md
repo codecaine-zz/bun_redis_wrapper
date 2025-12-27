@@ -60,7 +60,7 @@ bun_redis_wrapper/
    - Clear examples for common use cases
    - Type-safe and well-documented
 
-2. **Run Example App** → `bun run controllers/example-app.ts`
+2. **Run Example App** → `bun run demos/14-controller-app.ts`
    - See all controllers in action
    - Real-world usage patterns
    - Production tips
@@ -78,7 +78,7 @@ bun_redis_wrapper/
 ### For Learning Redis Concepts
 
 1. **Explore Demos** → [demos/README.md](demos/README.md)
-   - 13 comprehensive examples
+   - 15 comprehensive examples
    - All Redis data types covered
    - Best practices included
 
@@ -87,10 +87,14 @@ bun_redis_wrapper/
    - Run demos interactively
    - See output immediately
 
-3. **Follow Learning Paths**
+3. **Run Everything (non-interactive)** → `bun run demos`
+   - Runs the full demo suite end-to-end
+   - CI-friendly
+
+4. **Follow Learning Paths**
    - **Beginner Path**: demos 01 → 11 → 02 → 05
    - **Advanced Path**: demos 04 → 06 → 07 → 08 → 09 → 10
-   - **Full Path**: Complete all 11 demos in order
+   - **Full Path**: Complete all 15 demos in order
 
 ### For Advanced Users
 
@@ -206,7 +210,7 @@ import "./demos/run.ts";
 
 ```bash
 # Run example application
-bun run controllers/example-app.ts
+bun run demos/14-controller-app.ts
 
 # Run interactive demo menu
 bun run demos/run.ts
@@ -226,7 +230,7 @@ import { SessionController } from "./controllers/index.ts";
 
 1. **Day 1**: Controllers
    - Read [controllers/README.md](controllers/README.md)
-   - Run `bun run controllers/example-app.ts`
+   - Run `bun run demos/14-controller-app.ts`
    - Pick 1-2 controllers for your app
 
 2. **Day 2-3**: Core Concepts
@@ -252,7 +256,7 @@ import { SessionController } from "./controllers/index.ts";
 - ✅ Learn Redis → Read **demos/**
 - ✅ Understand API → Read **API.md**
 - ✅ Quick lookup → Read **QUICK_REFERENCE.md**
-- ✅ See examples → Run **controllers/example-app.ts**
+- ✅ See examples → Run **demos/14-controller-app.ts**
 - ✅ Deep dive → Read source code in **redis-wrapper.ts**
 
 ## 💡 Pro Tips
@@ -273,7 +277,7 @@ import { SessionController } from "./controllers/index.ts";
 
 2. Run the examples:
    ```bash
-   bun run controllers/example-app.ts
+   bun run demos/14-controller-app.ts
    ```
 
 3. Pick what you need and integrate into your project!

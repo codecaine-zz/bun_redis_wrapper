@@ -30,21 +30,15 @@
   - Common patterns (cache-aside, rate limiting, distributed lock, session management)
 
 ### Examples & Tests
-- **[example.ts](example.ts)** - 10 comprehensive usage examples
-  - Basic namespace usage
-  - JSON storage
-  - Counter operations
-  - Hash operations
-  - List operations
-  - Set operations
-  - Pattern matching
-  - Multi-tenant application
-  - Rate limiting
-  - Namespace cleanup
+- **[demos/](../demos/)** - 15 comprehensive demo applications
+  - Basic usage, sessions, caching, rate limiting
+  - Leaderboards, streams, geospatial, HyperLogLog
+  - Multi-tenant, job queue, environment namespaces
+  - Healthcare formulary, RAD app controller, full controller app
 
-- **[index.test.ts](index.test.ts)** - Complete test suite with 59 tests
+- **[tests/index.test.ts](../tests/index.test.ts)** - Complete test suite with 83 tests
   - ✅ All tests passing
-  - 106 expect() assertions
+  - 145 expect() calls
   - Covers all functionality
 
 ### Configuration

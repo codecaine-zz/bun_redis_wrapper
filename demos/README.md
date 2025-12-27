@@ -21,6 +21,7 @@ Comprehensive demo applications showcasing the entire Redis Wrapper API with rea
 | [12-healthcare-formulary.ts](#12-healthcare-formulary) | Healthcare | Formulary, PA, Step Therapy | ⭐⭐⭐ Advanced |
 | [13-rad-app-development.ts](#13-rad-app-development) | RAD | Rapid App Development, Namespaces | ⭐⭐ Intermediate |
 | [14-controller-app.ts](#14-controller-app) | Full Application | All controllers integrated | ⭐⭐⭐ Advanced |
+| [15-environment-promotion.ts](#15-environment-promotion) | Environment Promotion | Dev→Staging→Prod workflows | ⭐⭐ Intermediate |
 
 ## 🚀 Quick Start
 
@@ -37,6 +38,9 @@ docker run -d -p 6379:6379 redis:latest
 ### Running Demos
 
 ```bash
+# Run all demos (recommended for verification)
+bun run demos
+
 # Run any demo
 bun run demos/01-getting-started.ts
 
@@ -410,6 +414,52 @@ bun run demos/11-environment-namespaces-cms.ts
 
 ---
 
+### 15-environment-promotion
+
+**Environment Promotion Workflows**
+
+Master the art of promoting data between development, staging, and production environments using `copyNamespace` and namespace isolation.
+
+**What you'll learn:**
+- Environment promotion workflows (dev → staging → prod)
+- Using `copyNamespace` for safe data transfers
+- Selective copying with pattern matching
+- Environment-specific configurations
+- Rollback strategies and backups
+- Dry-run previews before promotion
+- Feature flag management across environments
+
+**Use cases:**
+- CI/CD pipelines
+- Configuration management across environments
+- Feature flag promotion
+- Cache warming strategies
+- Disaster recovery and rollback
+- Multi-environment testing
+
+```bash
+bun run demos/15-environment-promotion.ts
+```
+
+**Key Features:**
+- Development environment setup
+- Staging environment promotion
+- Production deployment strategies
+- Backup and rollback capabilities
+- Selective data copying with patterns
+- Dry-run mode for safe previews
+- Environment-specific overrides
+
+**Demo Flow:**
+1. Set up development environment with test data
+2. Promote to staging with validation
+3. Selective promotion to production
+4. Backup creation and rollback demo
+5. Dry-run preview of changes
+6. Best practices summary
+
+---
+
 ## 🎯 Learning Paths
 
 ### Beginner Path
@@ -536,9 +586,9 @@ done
 ## 📚 Additional Resources
 
 ### Documentation
-- [API Reference](../API.md) - Complete API documentation
-- [Redis Features](../REDIS_FEATURES.md) - Redis coverage analysis
-- [Quick Reference](../QUICK_REFERENCE.md) - Command cheat sheet
+- [API Reference](../docs/API.md) - Complete API documentation
+- [Redis Features](../docs/REDIS_FEATURES.md) - Redis coverage analysis
+- [Quick Reference](../docs/QUICK_REFERENCE.md) - Command cheat sheet
 
 ### Redis Resources
 - [Redis Documentation](https://redis.io/docs/)
@@ -623,9 +673,9 @@ bun install
 
 ## 📊 Demo Statistics
 
-- **Total Demos**: 11
-- **Lines of Code**: ~5,000+
-- **Use Cases Covered**: 30+
+- **Total Demos**: 15
+- **Lines of Code**: ~6,000+
+- **Use Cases Covered**: 35+
 - **Redis Features**: All major data types
 - **Difficulty Levels**: Beginner to Advanced
 

@@ -13,7 +13,8 @@
  * ```
  */
 
-import type { RedisWrapper } from "../redis-wrapper.ts";
+import { RedisWrapper } from "../redis-wrapper";
+import { createNamespacedRedis, type NamespacedRedisWrapper } from "../index";
 
 export interface CacheStats {
   hits: number;
@@ -30,13 +31,13 @@ export interface CacheOptions {
 }
 
 export class CacheController {
-  private redis: RedisWrapper;
-  private namespace: string;
-  private statsKey = "cache:stats";
+  private redis: NamespacedRedisWrapper;
+  private statsKey = "stats";
 
-  constructor(redis: RedisWrapper, namespace: string = "cache") {
-    this.redis = redis;
-    this.namespace = namespace;
+  constructor(redis: RedisWrapper | NamespacedRedisWrapper, namespace: string = "cache") {
+    this.redis = redis instanceof RedisWrapper
+      ? createNamespacedRedis(redis, namespace)
+      : redis;
   }
 
   /**
@@ -53,10 +54,8 @@ export class CacheController {
     loader: () => Promise<T>,
     ttl: number = 300
   ): Promise<T> {
-    const cacheKey = this.getKey(key);
-
     // Try to get from cache
-    const cached = await this.redis.getJSON<T>(cacheKey);
+    const cached = await this.redis.getJSON<T>(key);
 
     if (cached !== null) {
       await this.incrementHits();
@@ -68,7 +67,7 @@ export class CacheController {
     const data = await loader();
 
     // Store in cache
-    await this.redis.setJSON(cacheKey, data, { EX: ttl });
+    await this.redis.setJSON(key, data, { EX: ttl });
 
     return data;
   }
@@ -80,8 +79,7 @@ export class CacheController {
    * @returns Cached value or null
    */
   async get<T>(key: string): Promise<T | null> {
-    const cacheKey = this.getKey(key);
-    const value = await this.redis.getJSON<T>(cacheKey);
+    const value = await this.redis.getJSON<T>(key);
 
     if (value !== null) {
       await this.incrementHits();
@@ -100,8 +98,7 @@ export class CacheController {
    * @param ttl - Time to live in seconds
    */
   async set<T>(key: string, value: T, ttl: number = 300): Promise<void> {
-    const cacheKey = this.getKey(key);
-    await this.redis.setJSON(cacheKey, value, { EX: ttl });
+    await this.redis.setJSON(key, value, { EX: ttl });
   }
 
   /**
@@ -111,8 +108,7 @@ export class CacheController {
    * @returns True if deleted
    */
   async delete(key: string): Promise<boolean> {
-    const cacheKey = this.getKey(key);
-    const deleted = await this.redis.del(cacheKey);
+    const deleted = await this.redis.del(key);
     return deleted > 0;
   }
 
@@ -123,8 +119,7 @@ export class CacheController {
    * @returns Number of keys deleted
    */
   async deletePattern(pattern: string): Promise<number> {
-    const fullPattern = this.getKey(pattern);
-    const keys = await this.redis.scanAll(fullPattern);
+    const keys = await this.redis.scanAll(pattern);
 
     if (keys.length === 0) {
       return 0;
@@ -140,8 +135,7 @@ export class CacheController {
    * @returns True if exists
    */
   async has(key: string): Promise<boolean> {
-    const cacheKey = this.getKey(key);
-    const exists = await this.redis.exists(cacheKey);
+    const exists = await this.redis.exists(key);
     return Number(exists) > 0;
   }
 
@@ -152,8 +146,7 @@ export class CacheController {
    * @returns Seconds remaining or -1 if no expiry, -2 if not found
    */
   async ttl(key: string): Promise<number> {
-    const cacheKey = this.getKey(key);
-    return await this.redis.ttl(cacheKey);
+    return await this.redis.ttl(key);
   }
 
   /**
@@ -164,8 +157,7 @@ export class CacheController {
    * @returns True if updated
    */
   async updateTTL(key: string, ttl: number): Promise<boolean> {
-    const cacheKey = this.getKey(key);
-    const result = await this.redis.expire(cacheKey, ttl);
+    const result = await this.redis.expire(key, ttl);
     return result === 1;
   }
 
@@ -192,8 +184,7 @@ export class CacheController {
     const hitRate = total > 0 ? (hits / total) * 100 : 0;
 
     // Count keys in namespace
-    const pattern = this.getKey("*");
-    const keys = await this.redis.scanAll(pattern);
+    const keys = await this.redis.scanAll("*");
     const totalKeys = keys.length;
 
     return {
@@ -217,8 +208,7 @@ export class CacheController {
    * @returns Number of keys deleted
    */
   async clear(): Promise<number> {
-    const pattern = this.getKey("*");
-    const keys = await this.redis.scanAll(pattern);
+    const keys = await this.redis.scanAll("*");
 
     if (keys.length === 0) {
       return 0;
@@ -233,12 +223,7 @@ export class CacheController {
    * @returns Array of keys (without namespace prefix)
    */
   async keys(pattern: string = "*"): Promise<string[]> {
-    const fullPattern = this.getKey(pattern);
-    const keys = await this.redis.scanAll(fullPattern);
-    
-    // Remove namespace prefix
-    const prefix = `${this.namespace}:`;
-    return keys.map(key => key.replace(prefix, ""));
+    return await this.redis.scanAll(pattern);
   }
 
   /**
@@ -247,8 +232,7 @@ export class CacheController {
    * @returns Number of keys in cache
    */
   async size(): Promise<number> {
-    const pattern = this.getKey("*");
-    const keys = await this.redis.scanAll(pattern);
+    const keys = await this.redis.scanAll("*");
     return keys.length;
   }
 
@@ -266,10 +250,4 @@ export class CacheController {
     await this.redis.incr(`${this.statsKey}:misses`);
   }
 
-  /**
-   * Get full cache key with namespace
-   */
-  private getKey(key: string): string {
-    return `${this.namespace}:${key}`;
-  }
 }

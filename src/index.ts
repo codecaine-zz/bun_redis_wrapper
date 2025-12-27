@@ -183,11 +183,31 @@ export function createNamespacedRedis(
     },
 
     async command<T = unknown>(cmd: string, ...args: any[]): Promise<T> {
-      // Auto-prefix the first argument if it looks like a key
-      // This is a simple heuristic - Redis commands typically have the key as the first arg
-      if (args.length > 0 && typeof args[0] === 'string') {
+      // Auto-prefix key arguments for common commands.
+      // Default heuristic: prefix the first argument if it's a string.
+      // Special cases: commands that take multiple keys.
+      const upper = cmd.toUpperCase();
+
+      // Commands where all provided args are keys.
+      // (Used by this repo: SINTER)
+      const allKeyArgs = new Set([
+        "SINTER",
+        "SUNION",
+        "SDIFF",
+        "SINTERSTORE",
+        "SUNIONSTORE",
+        "SDIFFSTORE"
+      ]);
+
+      if (allKeyArgs.has(upper)) {
+        args = args.map((arg) => (typeof arg === "string" ? addPrefix(arg) : arg));
+        return redis.command<T>(cmd, ...args);
+      }
+
+      if (args.length > 0 && typeof args[0] === "string") {
         args[0] = addPrefix(args[0]);
       }
+
       return redis.command<T>(cmd, ...args);
     },
 
@@ -415,6 +435,131 @@ export function createNamespacedRedis(
 // ============================================================================
 // Namespace Helper Functions
 // ============================================================================
+
+export interface CopyNamespaceOptions {
+  /** Pattern within the source namespace (default: "*") */
+  match?: string;
+  /** SCAN COUNT hint (default: 100) */
+  count?: number;
+  /** Overwrite destination keys if they already exist (default: false) */
+  replace?: boolean;
+  /** If true, don't write anything; only report what would happen (default: false) */
+  dryRun?: boolean;
+}
+
+export interface CopyNamespaceResult {
+  /** Number of keys seen via SCAN */
+  scanned: number;
+  /** Number of keys written to destination namespace */
+  copied: number;
+  /** Number of keys skipped (e.g., destination existed and replace=false) */
+  skipped: number;
+}
+
+/**
+ * Copy all keys from one namespace to another.
+ *
+ * This is useful for promoting data between environment namespaces
+ * like `dev -> staging -> prod` when environments share a Redis instance.
+ *
+ * Implementation details:
+ * - Uses `SCAN` to enumerate keys in the source namespace.
+ * - Uses `DUMP` + `RESTORE` to preserve key type and TTL.
+ *
+ * @param redis - The base Redis wrapper instance
+ * @param fromNamespace - Source namespace
+ * @param toNamespace - Destination namespace
+ * @param options - Copy behavior options
+ */
+export async function copyNamespace(
+  redis: RedisWrapper,
+  fromNamespace: string,
+  toNamespace: string,
+  options: CopyNamespaceOptions = {}
+): Promise<CopyNamespaceResult> {
+  const fromPrefix = fromNamespace.endsWith(":") ? fromNamespace : `${fromNamespace}:`;
+  const toPrefix = toNamespace.endsWith(":") ? toNamespace : `${toNamespace}:`;
+
+  if (fromPrefix === toPrefix) {
+    throw new Error("fromNamespace and toNamespace must be different");
+  }
+
+  const match = options.match ?? "*";
+  const scanCount = options.count ?? 100;
+  const replace = options.replace ?? false;
+  const dryRun = options.dryRun ?? false;
+
+  const pattern = `${fromPrefix}${match}`;
+
+  const result: CopyNamespaceResult = {
+    scanned: 0,
+    copied: 0,
+    skipped: 0
+  };
+
+  let cursor = "0";
+
+  do {
+    const scan = await redis.command<[string, string[]]>(
+      "SCAN",
+      cursor,
+      "MATCH",
+      pattern,
+      "COUNT",
+      scanCount
+    );
+
+    cursor = scan[0];
+    const keys = scan[1];
+
+    for (const sourceKey of keys) {
+      // Defensive: SCAN MATCH should ensure prefix, but keep it safe.
+      if (!sourceKey.startsWith(fromPrefix)) continue;
+
+      result.scanned++;
+
+      const relativeKey = sourceKey.slice(fromPrefix.length);
+      const destKey = `${toPrefix}${relativeKey}`;
+
+      if (!replace) {
+        const exists = await redis.command<number>("EXISTS", destKey);
+        if (exists === 1) {
+          result.skipped++;
+          continue;
+        }
+      }
+
+      if (dryRun) {
+        result.copied++;
+        continue;
+      }
+
+      // Server-side copy avoids binary DUMP payload issues in some clients.
+      // TTL is explicitly synced to ensure consistent behavior.
+      const pttl = await redis.command<number>("PTTL", sourceKey);
+
+      const copyArgs: any[] = [sourceKey, destKey];
+      if (replace) copyArgs.push("REPLACE");
+
+      const didCopy = await redis.command<number>("COPY", ...copyArgs);
+      if (didCopy !== 1) {
+        result.skipped++;
+        continue;
+      }
+
+      if (pttl > 0) {
+        await redis.command<number>("PEXPIRE", destKey, pttl);
+      } else if (pttl === -1) {
+        // Ensure destination is persistent if source is persistent.
+        await redis.command<number>("PERSIST", destKey);
+      }
+
+      result.copied++;
+    }
+  } while (cursor !== "0");
+
+  return result;
+}
 
 /**
  * Helper function to clear all keys in a namespace

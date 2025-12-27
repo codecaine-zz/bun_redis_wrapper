@@ -31,6 +31,7 @@ import {
   createRedis, 
   createNamespacedRedis, 
   clearNamespace,
+  copyNamespace,
   RedisWrapper,
   type NamespacedRedisWrapper,
   type SetOptions
@@ -110,6 +111,30 @@ console.log(`Deleted ${deleted} keys`);
 ```
 
 **Warning:** This operation scans and deletes all matching keys. Use carefully in production.
+
+---
+
+### `copyNamespace(redis: RedisWrapper, fromNamespace: string, toNamespace: string, options?: CopyNamespaceOptions): Promise<CopyNamespaceResult>`
+
+Copies all keys from one namespace to another.
+
+**Parameters:**
+- `redis`: Base Redis wrapper instance
+- `fromNamespace`: Namespace to copy from
+- `toNamespace`: Namespace to copy to
+- `options` (optional): `{ match?: string; count?: number; replace?: boolean; dryRun?: boolean }`
+
+**Returns:** `Promise<{ scanned: number; copied: number; skipped: number }>`
+
+**Example:**
+```typescript
+const result = await copyNamespace(redis, "myapp:dev", "myapp:staging", { replace: false });
+console.log(result); // { scanned, copied, skipped }
+```
+
+**Notes:**
+- Preserves key type and TTL using `DUMP` + `RESTORE`.
+- By default it will not overwrite destination keys (`replace: false`).
 
 ---
 

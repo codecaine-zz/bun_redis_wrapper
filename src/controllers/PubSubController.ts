@@ -22,7 +22,7 @@
  * ```
  */
 
-import type { RedisWrapper } from "../index";
+import { RedisWrapper, type NamespacedRedisWrapper, createNamespacedRedis } from "../index";
 
 export interface PubSubMessage<T = any> {
   channel: string;
@@ -38,12 +38,29 @@ export type MessageHandler<T = any> = (message: T, channel: string) => void | Pr
  * Simple and reliable pub/sub for instant communication between services.
  */
 export class PubSubController {
-  private redis: RedisWrapper;
+  private redis: NamespacedRedisWrapper;
+  private prefix: string;
   private subscribers: Map<string, Set<MessageHandler>> = new Map();
   private patterns: Map<string, Set<MessageHandler>> = new Map();
 
-  constructor(redis: RedisWrapper) {
-    this.redis = redis;
+  constructor(redis: RedisWrapper | NamespacedRedisWrapper, namespace = "pubsub") {
+    this.redis = redis instanceof RedisWrapper
+      ? createNamespacedRedis(redis, namespace)
+      : redis;
+
+    this.prefix = namespace.length > 0
+      ? (namespace.endsWith(":") ? namespace : `${namespace}:`)
+      : "";
+  }
+
+  private toInternal(channelOrPattern: string): string {
+    return this.prefix ? `${this.prefix}${channelOrPattern}` : channelOrPattern;
+  }
+
+  private fromInternal(channelOrPattern: string): string {
+    return this.prefix && channelOrPattern.startsWith(this.prefix)
+      ? channelOrPattern.slice(this.prefix.length)
+      : channelOrPattern;
   }
 
   /**
@@ -70,19 +87,20 @@ export class PubSubController {
     channel: string,
     handler: MessageHandler<T>
   ): Promise<() => Promise<void>> {
-    if (!this.subscribers.has(channel)) {
-      this.subscribers.set(channel, new Set());
+    const internalChannel = this.toInternal(channel);
+    if (!this.subscribers.has(internalChannel)) {
+      this.subscribers.set(internalChannel, new Set());
     }
     
-    this.subscribers.get(channel)!.add(handler as MessageHandler);
+    this.subscribers.get(internalChannel)!.add(handler as MessageHandler);
 
     // Return unsubscribe function
     return async () => {
-      const handlers = this.subscribers.get(channel);
+      const handlers = this.subscribers.get(internalChannel);
       if (handlers) {
         handlers.delete(handler as MessageHandler);
         if (handlers.size === 0) {
-          this.subscribers.delete(channel);
+          this.subscribers.delete(internalChannel);
         }
       }
     };
@@ -110,18 +128,19 @@ export class PubSubController {
     pattern: string,
     handler: MessageHandler<T>
   ): Promise<() => Promise<void>> {
-    if (!this.patterns.has(pattern)) {
-      this.patterns.set(pattern, new Set());
+    const internalPattern = this.toInternal(pattern);
+    if (!this.patterns.has(internalPattern)) {
+      this.patterns.set(internalPattern, new Set());
     }
     
-    this.patterns.get(pattern)!.add(handler as MessageHandler);
+    this.patterns.get(internalPattern)!.add(handler as MessageHandler);
 
     return async () => {
-      const handlers = this.patterns.get(pattern);
+      const handlers = this.patterns.get(internalPattern);
       if (handlers) {
         handlers.delete(handler as MessageHandler);
         if (handlers.size === 0) {
-          this.patterns.delete(pattern);
+          this.patterns.delete(internalPattern);
         }
       }
     };
@@ -151,6 +170,7 @@ export class PubSubController {
    * ```
    */
   async publish<T = any>(channel: string, message: T): Promise<number> {
+    const internalChannel = this.toInternal(channel);
     const payload = JSON.stringify({
       channel,
       data: message,
@@ -160,7 +180,7 @@ export class PubSubController {
     // Simulate publishing (Bun's RedisClient may not have direct pubsub support)
     // In a real implementation, you would use redis.publish()
     // For now, we'll trigger local handlers
-    const handlers = this.subscribers.get(channel);
+    const handlers = this.subscribers.get(internalChannel);
     if (handlers) {
       const parsedMessage = JSON.parse(payload);
       for (const handler of handlers) {
@@ -172,7 +192,7 @@ export class PubSubController {
     // Check pattern matches
     let count = 0;
     for (const [pattern, handlers] of this.patterns.entries()) {
-      if (this.matchPattern(channel, pattern)) {
+      if (this.matchPattern(internalChannel, pattern)) {
         const parsedMessage = JSON.parse(payload);
         for (const handler of handlers) {
           await Promise.resolve(handler(parsedMessage.data, channel));
@@ -217,7 +237,7 @@ export class PubSubController {
    * @returns Array of channel names
    */
   getActiveChannels(): string[] {
-    return Array.from(this.subscribers.keys());
+    return Array.from(this.subscribers.keys()).map((c) => this.fromInternal(c));
   }
 
   /**
@@ -226,7 +246,7 @@ export class PubSubController {
    * @returns Array of pattern strings
    */
   getActivePatterns(): string[] {
-    return Array.from(this.patterns.keys());
+    return Array.from(this.patterns.keys()).map((p) => this.fromInternal(p));
   }
 
   /**
@@ -236,7 +256,7 @@ export class PubSubController {
    * @returns Number of subscribers
    */
   getSubscriberCount(channel: string): number {
-    return this.subscribers.get(channel)?.size || 0;
+    return this.subscribers.get(this.toInternal(channel))?.size || 0;
   }
 
   /**

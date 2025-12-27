@@ -5,8 +5,8 @@ Drop-in controllers for building production applications with Redis. Each contro
 ## 🎯 Quick Start
 
 ```typescript
-import { createRedis } from "../index.ts";
-import { SessionController, CounterController } from "./controllers/index.ts";
+import { createRedis } from "@codecaine/bun-redis-wrapper";
+import { SessionController, CounterController } from "@codecaine/bun-redis-wrapper/controllers";
 
 const redis = await createRedis();
 const sessions = new SessionController(redis);
@@ -21,7 +21,7 @@ const sessionId = await sessions.create("user-123", {
 await counters.increment("page:home:views");
 ```
 
-## 📦 Available Controllers (10 Total)
+## 📦 Available Controllers (12 Total)
 
 ### Core Controllers
 
@@ -408,10 +408,10 @@ export default app;
 
 ## 📚 Additional Resources
 
-- [Demos](../demos/) - 11 comprehensive examples
-- [API Documentation](../API.md) - Complete API reference
-- [Quick Reference](../QUICK_REFERENCE.md) - Common patterns
-- [Redis Features](../REDIS_FEATURES.md) - Redis data types guide
+- [Demos](../demos/) - 15 comprehensive examples
+- [API Documentation](../docs/API.md) - Complete API reference
+- [Quick Reference](../docs/QUICK_REFERENCE.md) - Common patterns
+- [Redis Features](../docs/REDIS_FEATURES.md) - Redis data types guide
 
 ### 12. FormularyController (Healthcare)
 

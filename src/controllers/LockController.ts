@@ -24,8 +24,8 @@
  * ```
  */
 
-import type { RedisWrapper } from "../index";
-import { createNamespacedRedis } from "../index";
+import type { NamespacedRedisWrapper } from "../index";
+import { RedisWrapper, createNamespacedRedis } from "../index";
 
 export interface LockOptions {
   /** Lock timeout in seconds (default: 30) */
@@ -43,10 +43,12 @@ export interface LockOptions {
  * only one process can hold a lock at a time.
  */
 export class LockController {
-  private redis: ReturnType<typeof createNamespacedRedis>;
+  private redis: NamespacedRedisWrapper;
 
-  constructor(redis: RedisWrapper) {
-    this.redis = createNamespacedRedis(redis, "locks");
+  constructor(redis: RedisWrapper | NamespacedRedisWrapper, namespace: string = "locks") {
+    this.redis = redis instanceof RedisWrapper
+      ? createNamespacedRedis(redis, namespace)
+      : redis;
   }
 
   /**

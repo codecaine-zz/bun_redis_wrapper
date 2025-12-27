@@ -15,15 +15,16 @@
  * ```
  */
 
-import type { RedisWrapper } from "../redis-wrapper.ts";
+import { RedisWrapper } from "../redis-wrapper";
+import { createNamespacedRedis, type NamespacedRedisWrapper } from "../index";
 
 export class StorageController {
-  private redis: RedisWrapper;
-  private namespace: string;
+  private redis: NamespacedRedisWrapper;
 
-  constructor(redis: RedisWrapper, namespace: string = "storage") {
-    this.redis = redis;
-    this.namespace = namespace;
+  constructor(redis: RedisWrapper | NamespacedRedisWrapper, namespace: string = "storage") {
+    this.redis = redis instanceof RedisWrapper
+      ? createNamespacedRedis(redis, namespace)
+      : redis;
   }
 
   /**
@@ -34,9 +35,8 @@ export class StorageController {
    * @param ttl - Optional TTL in seconds
    */
   async set<T = any>(key: string, value: T, ttl?: number): Promise<void> {
-    const fullKey = this.getKey(key);
     const options = ttl ? { EX: ttl } : undefined;
-    await this.redis.setJSON(fullKey, value, options);
+    await this.redis.setJSON(key, value, options);
   }
 
   /**
@@ -46,8 +46,7 @@ export class StorageController {
    * @returns Stored value or null
    */
   async get<T = any>(key: string): Promise<T | null> {
-    const fullKey = this.getKey(key);
-    return await this.redis.getJSON<T>(fullKey);
+    return await this.redis.getJSON<T>(key);
   }
 
   /**
@@ -57,8 +56,7 @@ export class StorageController {
    * @returns True if exists
    */
   async has(key: string): Promise<boolean> {
-    const fullKey = this.getKey(key);
-    const exists = await this.redis.exists(fullKey);
+    const exists = await this.redis.exists(key);
     return Number(exists) > 0;
   }
 
@@ -69,8 +67,7 @@ export class StorageController {
    * @returns True if deleted
    */
   async delete(key: string): Promise<boolean> {
-    const fullKey = this.getKey(key);
-    const deleted = await this.redis.del(fullKey);
+    const deleted = await this.redis.del(key);
     return deleted > 0;
   }
 
@@ -81,8 +78,7 @@ export class StorageController {
    * @returns Number of keys deleted
    */
   async deleteMany(...keys: string[]): Promise<number> {
-    const fullKeys = keys.map(k => this.getKey(k));
-    return await this.redis.del(...fullKeys);
+    return await this.redis.del(...keys);
   }
 
   /**
@@ -120,12 +116,7 @@ export class StorageController {
    * @returns Array of keys (without namespace prefix)
    */
   async keys(pattern: string = "*"): Promise<string[]> {
-    const fullPattern = this.getKey(pattern);
-    const keys = await this.redis.scanAll(fullPattern);
-
-    // Remove namespace prefix
-    const prefix = `${this.namespace}:`;
-    return keys.map(key => key.replace(prefix, ""));
+    return await this.redis.scanAll(pattern);
   }
 
   /**
@@ -164,8 +155,7 @@ export class StorageController {
    * @returns Number of keys deleted
    */
   async clear(): Promise<number> {
-    const fullPattern = this.getKey("*");
-    const keys = await this.redis.scanAll(fullPattern);
+    const keys = await this.redis.scanAll("*");
 
     if (keys.length === 0) {
       return 0;
@@ -182,12 +172,10 @@ export class StorageController {
    * @returns New value
    */
   async increment(key: string, amount: number = 1): Promise<number> {
-    const fullKey = this.getKey(key);
-    
     if (amount === 1) {
-      return await this.redis.incr(fullKey);
+      return await this.redis.incr(key);
     } else {
-      return await this.redis.command<number>("INCRBY", fullKey, amount);
+      return await this.redis.command<number>("INCRBY", key, amount);
     }
   }
 
@@ -199,12 +187,10 @@ export class StorageController {
    * @returns New value
    */
   async decrement(key: string, amount: number = 1): Promise<number> {
-    const fullKey = this.getKey(key);
-    
     if (amount === 1) {
-      return await this.redis.decr(fullKey);
+      return await this.redis.decr(key);
     } else {
-      return await this.redis.command<number>("DECRBY", fullKey, amount);
+      return await this.redis.command<number>("DECRBY", key, amount);
     }
   }
 
@@ -215,8 +201,7 @@ export class StorageController {
    * @returns Seconds remaining or -1 if no expiry, -2 if not found
    */
   async ttl(key: string): Promise<number> {
-    const fullKey = this.getKey(key);
-    return await this.redis.ttl(fullKey);
+    return await this.redis.ttl(key);
   }
 
   /**
@@ -227,8 +212,7 @@ export class StorageController {
    * @returns True if expiration was set
    */
   async expire(key: string, seconds: number): Promise<boolean> {
-    const fullKey = this.getKey(key);
-    const result = await this.redis.expire(fullKey, seconds);
+    const result = await this.redis.expire(key, seconds);
     return result === 1;
   }
 
@@ -239,8 +223,7 @@ export class StorageController {
    * @returns True if expiration was removed
    */
   async persist(key: string): Promise<boolean> {
-    const fullKey = this.getKey(key);
-    const result = await this.redis.command<number>("PERSIST", fullKey);
+    const result = await this.redis.command<number>("PERSIST", key);
     return result === 1;
   }
 
@@ -314,10 +297,4 @@ export class StorageController {
     await this.set(key, current);
   }
 
-  /**
-   * Get full key with namespace
-   */
-  private getKey(key: string): string {
-    return `${this.namespace}:${key}`;
-  }
 }
