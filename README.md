@@ -1,5 +1,9 @@
 # Bun Redis Wrapper - Production Ready
 
+[![npm version](https://img.shields.io/npm/v/@codecaine/bun-redis-wrapper.svg)](https://www.npmjs.com/package/@codecaine/bun-redis-wrapper)
+[![npm downloads](https://img.shields.io/npm/dm/@codecaine/bun-redis-wrapper.svg)](https://www.npmjs.com/package/@codecaine/bun-redis-wrapper)
+[![license](https://img.shields.io/npm/l/@codecaine/bun-redis-wrapper.svg)](https://github.com/codecaine-zz/bun_redis_wrapper/blob/main/LICENSE)
+
 A powerful Redis wrapper for Bun with **production-ready controllers** for building real applications. Drop-in solutions for sessions, caching, rate limiting, job queues, and more.
 
 ## 🎯 Quick Start for Beginners
@@ -7,8 +11,8 @@ A powerful Redis wrapper for Bun with **production-ready controllers** for build
 ### Option 1: Use Production Controllers (Recommended)
 
 ```typescript
-import { createRedis } from "@codecaine-zz/bun-redis-wrapper";
-import { SessionController, CacheController } from "@codecaine-zz/bun-redis-wrapper/controllers";
+import { createRedis } from "@codecaine/bun-redis-wrapper";
+import { SessionController, CacheController } from "@codecaine/bun-redis-wrapper/controllers";
 
 const redis = await createRedis();
 
@@ -35,7 +39,7 @@ const user = await cache.getOrSet("user:123", () => db.getUser(123), 300);
 ### Option 2: Use Core Wrapper Directly
 
 ```typescript
-import { createRedis, createNamespacedRedis } from "@codecaine-zz/bun-redis-wrapper";
+import { createRedis, createNamespacedRedis } from "@codecaine/bun-redis-wrapper";
 
 await using redis = await createRedis("redis://localhost:6379");
 await redis.set("key", "value");
@@ -87,7 +91,17 @@ const shopApp = createNamespacedRedis(redis, "shop");
 ## 🚀 Installation
 
 ```bash
-bun install
+# Using Bun
+bun add @codecaine/bun-redis-wrapper
+
+# Using npm
+npm install @codecaine/bun-redis-wrapper
+
+# Using pnpm
+pnpm add @codecaine/bun-redis-wrapper
+
+# Using yarn
+yarn add @codecaine/bun-redis-wrapper
 ```
 
 ## 📖 Quick Examples
@@ -95,7 +109,7 @@ bun install
 ### Sessions (Production-Ready)
 
 ```typescript
-import { SessionController } from "./src/controllers/index.ts";
+import { SessionController } from "@codecaine/bun-redis-wrapper/controllers";
 
 const sessions = new SessionController(redis);
 
@@ -118,7 +132,7 @@ await sessions.destroy(sessionId);
 ### Caching (Production-Ready)
 
 ```typescript
-import { CacheController } from "./src/controllers/index.ts";
+import { CacheController } from "@codecaine/bun-redis-wrapper/controllers";
 
 const cache = new CacheController(redis);
 
@@ -137,7 +151,7 @@ console.log(`Hit rate: ${stats.hitRate}%`);
 ### Rate Limiting (Production-Ready)
 
 ```typescript
-import { RateLimiterController } from "./src/controllers/index.ts";
+import { RateLimiterController } from "@codecaine/bun-redis-wrapper/controllers";
 
 const limiter = new RateLimiterController(redis);
 
@@ -154,7 +168,7 @@ console.log(`${result.remaining} requests remaining`);
 ### Background Jobs (Production-Ready)
 
 ```typescript
-import { QueueController } from "./src/controllers/index.ts";
+import { QueueController } from "@codecaine/bun-redis-wrapper/controllers";
 
 const queue = new QueueController(redis);
 
@@ -178,7 +192,7 @@ if (job) {
 ### Multi-Tenant Application
 
 ```typescript
-import { createRedis, createNamespacedRedis } from "./src/index.ts";
+import { createRedis, createNamespacedRedis } from "@codecaine/bun-redis-wrapper";
 
 await using redis = await createRedis();
 
